@@ -5,7 +5,7 @@ Step 3: Annotate Visual Theory of Mind — Structured Belief States
 Annotates each per-turn example with STRUCTURED BELIEF STATES,
 drawing from best practices across ToM benchmarks:
 
-  - Hi-ToM: nested belief dicts for higher-order ToM
+  - nested belief dictionaries for higher-order ToM
   - MMToM-QA: symbolic predicates grounded in visual scenes
   - MuMA-ToM: multi-agent belief/goal inference over video
   - Dynamic Belief Graphs: structured binary belief vectors
@@ -53,7 +53,7 @@ from openai import OpenAI
 # ---------------------------------------------------------------------------
 # Annotation schema — structured belief states
 # ---------------------------------------------------------------------------
-# Follows Hi-ToM nesting + MMToM-QA symbolic predicates + MuMA-ToM QA probes
+# Uses nested beliefs, MMToM-QA symbolic predicates, and MuMA-ToM QA probes
 
 ANNOTATION_SCHEMA = {
     "type": "json_schema",
@@ -100,7 +100,7 @@ ANNOTATION_SCHEMA = {
                 },
 
                 # ── 1st-Order Beliefs (A's model of B) ─────────────────
-                # Inspired by Hi-ToM order-1: belief[agent][target]
+                # First-order nesting: belief[agent][target]
                 "first_order_beliefs": {
                     "type": "object",
                     "properties": {
@@ -132,7 +132,7 @@ ANNOTATION_SCHEMA = {
                 },
 
                 # ── 2nd-Order Beliefs (A's model of B's model of A) ────
-                # Inspired by Hi-ToM order-2: belief[A][B][A]
+                # Second-order nesting: belief[A][B][A]
                 "second_order_beliefs": {
                     "type": "object",
                     "properties": {

@@ -61,13 +61,11 @@ ignored.
 ```text
 third_party/src/bigtom
 third_party/src/fantom
-third_party/src/hitom
-third_party/src/opentom
 third_party/src/tomi
 ```
 
-Do not train on transfer-test labels. FANToM, OpenToM, Hi-ToM, and ToMi are used
-by the shared BigToM evaluator for zero-shot transfer.
+Do not train on transfer-test labels. FANToM and ToMi are used by the shared
+BigToM evaluator for zero-shot transfer.
 
 ## Local path overrides
 

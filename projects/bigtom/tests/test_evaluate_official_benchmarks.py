@@ -41,21 +41,18 @@ def test_dry_run_validates_all_benchmarks(
     )
 
     payload = json.loads((out_dir / "dry_run_summary.json").read_text(encoding="utf-8"))
-    for dataset_name in ("opentom", "bigtom", "tomi", "hitom", "fantom"):
+    for dataset_name in ("bigtom", "tomi", "fantom"):
         assert payload["datasets"][dataset_name]["split_exists"]
         assert payload["datasets"][dataset_name]["num_rows"] >= 1
 
-    assert payload["datasets"]["opentom"]["scorer_exists"]
     assert payload["datasets"]["fantom"]["scorer_exists"]
 
 
 @pytest.mark.parametrize(
     ("dataset_name", "expected_scoring_source"),
     [
-        ("opentom", "official_scorer"),
         ("bigtom", "local_adapter"),
         ("tomi", "official_protocol_bridge"),
-        ("hitom", "local_adapter"),
         ("fantom", "official_scorer"),
     ],
 )

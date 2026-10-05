@@ -18,10 +18,7 @@ class DummyRunner:
     def _answer_for(self, question: str, choices=None) -> str:
         question_n = question.strip().lower()
         mapping = {
-            "where will noah think the marble is?": "red box",
-            "what does ava know?": "the key is in the drawer",
             "where is the milk?": "pantry",
-            "where will emma look first?": "locker",
             "does sam know when the cafe opens?": "yes",
             "where are the tickets?": "kitchen table",
             "who can answer where the package is?": "Maya and Priya",

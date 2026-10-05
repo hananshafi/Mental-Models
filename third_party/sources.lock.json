@@ -13,21 +13,9 @@
       "url": "https://github.com/skywalker023/fantom.git",
       "revision": "1cae6fa30f5ba04ca0fff5f5716b5ba7055e2e85"
     },
-    "hitom": {
-      "url": "https://github.com/ying-hui-he/Hi-ToM_dataset.git",
-      "revision": "4279d3f783ff4f3b9fcced2a2fec9f6328683f82"
-    },
-    "opentom": {
-      "url": "https://github.com/seacowx/OpenToM.git",
-      "revision": "3f22b66276b2d7ca5fe573c28c79cc0d077aafc5"
-    },
     "tomi": {
       "url": "https://github.com/facebookresearch/ToMi.git",
       "revision": "dea2bca9b366c41cdab0bd717353cc02453e193e"
-    },
-    "aida": {
-      "url": "https://github.com/The-Inscrutable-X/AIDoubleAgentDefenders.git",
-      "revision": "0f1ad2d336d9986eed736a7aa458275beb1535fc"
     }
   }
 }

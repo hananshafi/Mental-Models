@@ -124,25 +124,6 @@ def _parse_mc_choices(choices_value) -> List[str]:
     return [part.strip() for part in choices_text.split("|||") if part.strip()]
 
 
-def _coerce_answer(answer_value, choices: List[str]) -> str:
-    if answer_value is None:
-        return ""
-    if isinstance(answer_value, int) and 0 <= answer_value < len(choices):
-        return choices[answer_value]
-    if isinstance(answer_value, dict):
-        for key in ("text", "answer", "label"):
-            if key in answer_value:
-                return _coerce_answer(answer_value[key], choices)
-    text = str(answer_value).strip()
-    if not text:
-        return ""
-    if len(text) == 1 and text.isalpha():
-        idx = ord(text.upper()) - ord("A")
-        if 0 <= idx < len(choices):
-            return choices[idx]
-    return text
-
-
 def _first_present(record: Dict, keys: Iterable[str]):
     for key in keys:
         value = record.get(key)
@@ -190,40 +171,6 @@ def resolve_bigtom_paths(
     )
 
 
-def resolve_opentom_paths(
-    *,
-    benchmarks_root: Optional[str] = None,
-    root_override: Optional[str] = None,
-    split_override: Optional[str] = None,
-    scorer_override: Optional[str] = None,
-) -> BenchmarkPaths:
-    root = _as_path(root_override) or (Path(benchmarks_root or default_benchmarks_root()) / "opentom")
-    split_path = _as_path(split_override) or _first_existing(root, [
-        "data/opentom.json",
-        "data/test.json",
-        "data/test.jsonl",
-        "data/opentom_test.json",
-        "data/OpenToM_test.json",
-        "OpenToM_test.json",
-        "test.json",
-        "test.jsonl",
-    ])
-    scorer_path = _as_path(scorer_override) or _first_existing(root, [
-        "src/evaluate.py",
-        "evaluate.py",
-        "code/evaluate.py",
-        "scripts/evaluate.py",
-    ])
-    return BenchmarkPaths(
-        dataset="opentom",
-        root=root,
-        split_path=split_path,
-        scorer_path=scorer_path,
-        repo_root=root,
-        metadata={"split_name": "canonical", "uses_official_scorer": True},
-    )
-
-
 def resolve_tomi_paths(
     *,
     benchmarks_root: Optional[str] = None,
@@ -265,31 +212,6 @@ def resolve_tomi_paths(
             "uses_official_scorer": False,
             "uses_official_protocol_bridge": bool(scorer_path),
         },
-    )
-
-
-def resolve_hitom_paths(
-    *,
-    benchmarks_root: Optional[str] = None,
-    root_override: Optional[str] = None,
-    split_override: Optional[str] = None,
-) -> BenchmarkPaths:
-    root = _as_path(root_override) or (Path(benchmarks_root or default_benchmarks_root()) / "hitom")
-    split_path = _as_path(split_override) or _first_existing(root, [
-        "Hi-ToM_data/Hi-ToM_data.json",
-        "Hi-ToM_data.json",
-        "data/Hi-ToM_data.json",
-        "data/test.json",
-        "data/test.jsonl",
-        "test.json",
-        "test.jsonl",
-    ])
-    return BenchmarkPaths(
-        dataset="hitom",
-        root=root,
-        split_path=split_path,
-        repo_root=root,
-        metadata={"split_name": "canonical", "uses_official_scorer": False},
     )
 
 
@@ -361,111 +283,6 @@ def load_bigtom_official(csv_path: Path) -> List[Dict]:
     return load_bigtom_eval(csv_path)
 
 
-def load_opentom_official(path: Path) -> List[Dict]:
-    records = _load_json_or_jsonl(path)
-    rows = []
-    running_index = 0
-
-    def emit_row(base_record: Dict, qa_record: Dict, local_idx: int):
-        nonlocal running_index
-        story = (
-            base_record.get("narrative")
-            or base_record.get("plot")
-            or base_record.get("story")
-            or base_record.get("context")
-            or qa_record.get("story")
-            or qa_record.get("narrative")
-            or qa_record.get("context")
-        )
-        question = qa_record.get("question") or qa_record.get("query")
-        if not story or not question:
-            return
-        if isinstance(question, dict):
-            qa_record = question
-            question = qa_record.get("question") or qa_record.get("query")
-            if not question:
-                return
-        choices = _parse_mc_choices(
-            qa_record.get("choices")
-            or qa_record.get("options")
-            or qa_record.get("candidates")
-            or qa_record.get("answer_choices")
-        )
-        answer = _coerce_answer(
-            qa_record.get("answer", qa_record.get("gold_answer", qa_record.get("label"))),
-            choices,
-        )
-        question_type = (
-            qa_record.get("question_type")
-            or qa_record.get("type")
-            or qa_record.get("category")
-            or base_record.get("question_type")
-        )
-        plot_info = base_record.get("plot_info", {})
-        mover = plot_info.get("mover")
-        observer = plot_info.get("observer")
-        perspective = qa_record.get("perspective", base_record.get("perspective"))
-        if not perspective and mover and observer:
-            if f"As {observer}" in question:
-                perspective = "observer"
-            elif f"As {mover}" in question:
-                perspective = "mover"
-
-        tom_order = qa_record.get("tom_order", base_record.get("tom_order"))
-        if not tom_order and isinstance(question_type, str):
-            if question_type.endswith("-fo"):
-                tom_order = "first_order"
-            elif question_type.endswith("-so"):
-                tom_order = "second_order"
-
-        location_granularity = qa_record.get(
-            "location_granularity", base_record.get("location_granularity")
-        )
-        if not location_granularity and isinstance(question_type, str) and question_type.startswith("location"):
-            location_granularity = "fine" if "fine" in str(answer).strip().lower() else "coarse"
-
-        gold_choice_index = None
-        if answer and choices:
-            for idx, choice in enumerate(choices):
-                if answer.strip().lower() == choice.strip().lower():
-                    gold_choice_index = idx
-                    break
-
-        rows.append({
-            "dataset": "opentom",
-            "sample_id": qa_record.get("sample_id", base_record.get("sample_id", running_index)),
-            "story_id": base_record.get("story_id", base_record.get("id", running_index)),
-            "question_id": qa_record.get("question_id", local_idx),
-            "story": story.strip(),
-            "question": question.strip(),
-            "answer": answer,
-            "choices": choices,
-            "gold_choice_index": gold_choice_index,
-            "question_type": question_type,
-            "perspective": perspective,
-            "tom_order": tom_order,
-            "narrative_type": qa_record.get("narrative_type", base_record.get("narrative_type")),
-            "location_granularity": location_granularity,
-        })
-        running_index += 1
-
-    for record in records:
-        question_payload = record.get("question")
-        if isinstance(question_payload, dict):
-            emit_row(record, question_payload, 0)
-            continue
-        questions = record.get("questions")
-        if isinstance(questions, list):
-            for local_idx, qa_record in enumerate(questions):
-                if isinstance(qa_record, dict):
-                    emit_row(record, qa_record, local_idx)
-            continue
-        if isinstance(record, dict):
-            emit_row(record, record, 0)
-
-    return rows
-
-
 def load_tomi_official(test_path: Path, trace_path: Optional[Path] = None) -> List[Dict]:
     rows = []
     story_lines: List[str] = []
@@ -506,27 +323,6 @@ def load_tomi_official(test_path: Path, trace_path: Optional[Path] = None) -> Li
                 qa_index += 1
             else:
                 story_lines.append(remainder.strip())
-    return rows
-
-
-def load_hitom_official(path: Path) -> List[Dict]:
-    records = _load_json_or_jsonl(path)
-    rows = []
-    for idx, record in enumerate(records):
-        row = {
-            "dataset": "hitom",
-            "sample_id": record.get("sample_id", idx),
-            "story": record["story"],
-            "question": record["question"],
-            "prompt": str(record.get("prompt", "")).strip(),
-            "answer": str(record["answer"]).strip(),
-            "choices": _parse_mc_choices(record.get("choices", "")),
-            "question_order": record.get("question_order"),
-            "prompting_type": record.get("prompting_type"),
-            "deception": record.get("deception"),
-            "story_length": record.get("story_length"),
-        }
-        rows.append(row)
     return rows
 
 

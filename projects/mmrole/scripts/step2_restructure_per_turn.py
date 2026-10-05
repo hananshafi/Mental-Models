@@ -6,7 +6,7 @@ Decomposes each inter-role dialogue into per-turn examples structured
 around BELIEF STATE ESTIMATION — not response generation.
 
 Design informed by:
-  - Hi-ToM:  nested belief dicts (belief[A][B][obj] = state)
+  - nested belief dictionaries (belief[A][B][obj] = state)
   - MMToM-QA: symbolic predicates grounded in scene graphs
   - MuMA-ToM: multi-agent + multimodal belief/goal inference
   - Dynamic Belief Graphs: structured binary belief vectors

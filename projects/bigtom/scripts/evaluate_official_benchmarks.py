@@ -1,13 +1,8 @@
 """
-Canonical benchmark-first evaluation entrypoint for OpenToM-style policies.
+Canonical benchmark-first evaluation entrypoint for the paper models.
 
-This script evaluates `base`, `sft`, or `grpo` checkpoints on official
-benchmark splits for:
-  - OpenToM
-  - BigToM
-  - ToMi
-  - Hi-ToM
-  - FANToM
+This script evaluates `base`, `sft`, or `grpo` checkpoints on the official
+BigToM, ToMi, and FANToM benchmark splits.
 
 It prefers benchmark-native inference/scoring behavior:
   - multiple-choice benchmarks use choice scoring when available
@@ -18,7 +13,6 @@ It prefers benchmark-native inference/scoring behavior:
 import argparse
 import json
 import random
-import re
 import time
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -35,29 +29,22 @@ from official_eval_loaders import (
     default_benchmarks_root,
     load_bigtom_official,
     load_fantom_official,
-    load_hitom_official,
-    load_opentom_official,
     load_tomi_official,
     resolve_bigtom_paths,
     resolve_fantom_paths,
-    resolve_hitom_paths,
-    resolve_opentom_paths,
     resolve_tomi_paths,
     validate_benchmark_paths,
 )
 from official_eval_scorers import (
     run_official_fantom_scorer,
-    run_official_opentom_scorer,
     run_official_tomi_scorer,
     summarize_bigtom_metrics,
     summarize_fantom_metrics,
-    summarize_hitom_metrics,
-    summarize_opentom_metrics,
     summarize_tomi_metrics,
 )
 
 
-ALL_DATASETS = {"opentom", "bigtom", "tomi", "hitom", "fantom"}
+ALL_DATASETS = {"bigtom", "tomi", "fantom"}
 
 
 def _format_duration(seconds: float) -> str:
@@ -157,34 +144,6 @@ def _normalize_yes_no(text: str) -> Optional[str]:
     if "no" in norm or "false" in norm:
         return "no"
     return None
-
-
-def _extract_choice_text_from_response(response: str, choices: Sequence[str]) -> str:
-    text = (response or "").strip()
-    if not text or not choices:
-        return text
-
-    first_line = text.splitlines()[0].strip()
-    letter_match = re.match(
-        r"^(?:answer\s*[:\-]?\s*)?\(?([A-Z])\)?(?:[\.\:\-\s]|$)",
-        first_line,
-        flags=re.IGNORECASE,
-    )
-    if letter_match:
-        idx = ord(letter_match.group(1).upper()) - ord("A")
-        if 0 <= idx < len(choices):
-            return choices[idx]
-
-    normalized_text = normalize_text(text)
-    matching = []
-    for choice in choices:
-        choice_norm = normalize_text(choice)
-        if choice_norm and choice_norm in normalized_text:
-            matching.append(choice)
-    if len(matching) == 1:
-        return matching[0]
-
-    return first_line or text
 
 
 def _resolve_requested_datasets(text: str) -> List[str]:
@@ -318,91 +277,6 @@ def _finalize_summary(
     }
 
 
-def evaluate_opentom(rows: List[Dict], runner, args, out_dir: Path, resolved_paths: BenchmarkPaths) -> Dict:
-    predictions = []
-    max_new_tokens = _max_new_tokens_for_dataset(args, "opentom")
-    progress = _start_dataset_progress("opentom", len(rows), args.log_every)
-    for idx, row in enumerate(rows, start=1):
-        choices = row.get("choices") or []
-        if args.opentom_inference == "choice" and choices:
-            prompt = build_benchmark_prompt(
-                row["story"],
-                row["question"],
-                dataset_name="OpenToM",
-                choices=choices,
-                extra_instruction="Select the best answer from the listed options.",
-            )
-            picked = runner.pick_choice(prompt, choices, story=row["story"], question=row["question"])
-            predicted_answer = picked["choice_text"]
-            pred_choice_index = picked["choice_index"]
-            score = 1.0 if row.get("gold_choice_index") == pred_choice_index else 0.0
-            pred_label = predicted_answer
-            detail = {"choice_scores": picked["scores"], "choice_index": pred_choice_index}
-        else:
-            prompt = build_benchmark_prompt(row["story"], row["question"], dataset_name="OpenToM", choices=choices or None)
-            predicted_answer = runner.generate(
-                prompt,
-                story=row["story"],
-                question=row["question"],
-                max_new_tokens=max_new_tokens,
-            )
-            gold = normalize_text(row["answer"])
-            pred = normalize_text(predicted_answer)
-            score = 1.0 if (gold and (gold == pred or gold in pred)) else 0.0
-            pred_label = predicted_answer
-            detail = {}
-
-        record = dict(row)
-        record.update({
-            "prediction": predicted_answer,
-            "pred_label": pred_label,
-            "gold_label": row["answer"],
-            "score": score,
-            **detail,
-        })
-        predictions.append(record)
-        _maybe_log_dataset_progress(progress, idx)
-
-    local_metrics = summarize_opentom_metrics(predictions)
-    _print_dataset_stage("opentom", "finished local inference; saving predictions")
-    _, official_input_json, _ = _persist_summary(
-        out_dir=out_dir,
-        dataset_name="opentom",
-        mode=runner.mode,
-        summary={
-            "dataset": "opentom",
-            "mode": runner.mode,
-            "metrics": local_metrics,
-            "paths": {},
-            "scoring": {},
-        },
-        predictions=predictions,
-    )
-    _print_dataset_stage("opentom", "running official scorer bridge")
-    official_run = run_official_opentom_scorer(
-        scorer_path=resolved_paths.scorer_path,
-        predictions_path=official_input_json,
-        location_granularity=args.opentom_location_granularity,
-        perspective=args.opentom_perspective,
-    )
-    scoring_source = "official_scorer" if official_run and official_run.get("metrics") else "local_adapter"
-    summary = _finalize_summary(
-        dataset_name="opentom",
-        runner=runner,
-        resolved_paths=resolved_paths,
-        metrics=official_run["metrics"] if official_run and official_run.get("metrics") else local_metrics,
-        local_metrics=local_metrics,
-        official_run=official_run,
-        scoring_source=scoring_source,
-        inference_mode=args.opentom_inference,
-    )
-    summary["paths"]["predictions_jsonl"] = str(_predictions_path(out_dir, "opentom", runner.mode))
-    summary["paths"]["official_input_json"] = str(official_input_json)
-    _write_json(_summary_path(out_dir, "opentom", runner.mode), summary)
-    _print_dataset_stage("opentom", f"completed with scoring_source={scoring_source}")
-    return summary
-
-
 def evaluate_bigtom(rows: List[Dict], runner, args, out_dir: Path, resolved_paths: BenchmarkPaths) -> Dict:
     mc_rng = random.Random(42)
     predictions = []
@@ -530,74 +404,6 @@ def evaluate_tomi(rows: List[Dict], runner, args, out_dir: Path, resolved_paths:
     return summary
 
 
-def evaluate_hitom(rows: List[Dict], runner, args, out_dir: Path, resolved_paths: BenchmarkPaths) -> Dict:
-    predictions = []
-    max_new_tokens = _max_new_tokens_for_dataset(args, "hitom")
-    progress = _start_dataset_progress("hitom", len(rows), args.log_every)
-    for idx, row in enumerate(rows, start=1):
-        choices = row.get("choices") or []
-        prompt = row.get("prompt") or ""
-        if not prompt:
-            prompt = build_benchmark_prompt(
-                row["story"],
-                row["question"],
-                dataset_name="Hi-ToM",
-                choices=choices if choices else None,
-                extra_instruction=(
-                    "Answer by selecting the most likely option."
-                    if args.hitom_inference == "choice" and choices
-                    else ""
-                ),
-            )
-        if args.hitom_inference == "official":
-            predicted_answer_raw = runner.generate(
-                prompt,
-                story=row["story"],
-                question=row["question"],
-                max_new_tokens=max_new_tokens,
-            )
-            predicted_answer = _extract_choice_text_from_response(predicted_answer_raw, choices)
-            score = 1.0 if normalize_text(predicted_answer) == normalize_text(row["answer"]) else 0.0
-            detail = {"raw_prediction": predicted_answer_raw}
-        elif args.hitom_inference == "choice" and choices:
-            picked = runner.pick_choice(prompt, choices, story=row["story"], question=row["question"])
-            predicted_answer = picked["choice_text"]
-            score = 1.0 if normalize_text(predicted_answer) == normalize_text(row["answer"]) else 0.0
-            detail = {"choice_scores": picked["scores"], "choice_index": picked["choice_index"]}
-        else:
-            predicted_answer = runner.generate(
-                prompt,
-                story=row["story"],
-                question=row["question"],
-                max_new_tokens=max_new_tokens,
-            )
-            gold = normalize_text(row["answer"])
-            pred = normalize_text(predicted_answer)
-            score = 1.0 if gold == pred or gold in pred else 0.0
-            detail = {}
-
-        record = dict(row)
-        record.update({"prediction": predicted_answer, "score": score, **detail})
-        predictions.append(record)
-        _maybe_log_dataset_progress(progress, idx)
-
-    local_metrics = summarize_hitom_metrics(predictions)
-    summary = _finalize_summary(
-        dataset_name="hitom",
-        runner=runner,
-        resolved_paths=resolved_paths,
-        metrics=local_metrics,
-        local_metrics=local_metrics,
-        official_run=None,
-        scoring_source="local_adapter",
-        inference_mode=args.hitom_inference,
-    )
-    _print_dataset_stage("hitom", "finished local inference; saving predictions")
-    _persist_summary(out_dir=out_dir, dataset_name="hitom", mode=runner.mode, summary=summary, predictions=predictions)
-    _print_dataset_stage("hitom", "completed with scoring_source=local_adapter")
-    return summary
-
-
 def evaluate_fantom(rows: List[Dict], runner, args, out_dir: Path, resolved_paths: BenchmarkPaths) -> Dict:
     predictions = []
     max_new_tokens = _max_new_tokens_for_dataset(args, "fantom")
@@ -715,13 +521,6 @@ def evaluate_fantom(rows: List[Dict], runner, args, out_dir: Path, resolved_path
 
 
 def _resolve_paths_for_dataset(dataset_name: str, args) -> BenchmarkPaths:
-    if dataset_name == "opentom":
-        return resolve_opentom_paths(
-            benchmarks_root=args.benchmarks_root,
-            root_override=args.opentom_root,
-            split_override=args.opentom_test_path,
-            scorer_override=args.opentom_scorer_path,
-        )
     if dataset_name == "bigtom":
         return resolve_bigtom_paths(split_override=args.bigtom_csv)
     if dataset_name == "tomi":
@@ -730,12 +529,6 @@ def _resolve_paths_for_dataset(dataset_name: str, args) -> BenchmarkPaths:
             root_override=args.tomi_root,
             split_override=args.tomi_test_path,
             trace_override=args.tomi_trace_path,
-        )
-    if dataset_name == "hitom":
-        return resolve_hitom_paths(
-            benchmarks_root=args.benchmarks_root,
-            root_override=args.hitom_root,
-            split_override=args.hitom_path,
         )
     if dataset_name == "fantom":
         return resolve_fantom_paths(
@@ -760,14 +553,10 @@ def _dry_run_summary(requested: List[str], args, out_dir: Path) -> Dict:
         validation = validate_benchmark_paths(resolved)
         summary["datasets"][dataset_name] = validation
         if validation["split_exists"]:
-            if dataset_name == "opentom":
-                rows = load_opentom_official(resolved.split_path)
-            elif dataset_name == "bigtom":
+            if dataset_name == "bigtom":
                 rows = load_bigtom_official(resolved.split_path)
             elif dataset_name == "tomi":
                 rows = load_tomi_official(resolved.split_path, resolved.trace_path)
-            elif dataset_name == "hitom":
-                rows = load_hitom_official(resolved.split_path)
             else:
                 rows = load_fantom_official(resolved.split_path, input_type=args.fantom_input_type)
             summary["datasets"][dataset_name]["num_rows"] = len(_apply_limit(rows, args.limit))
@@ -780,7 +569,7 @@ def _dry_run_summary(requested: List[str], args, out_dir: Path) -> Dict:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--datasets", type=str, default="all",
-                    help="comma-separated subset of {opentom,bigtom,tomi,hitom,fantom} or 'all'")
+                    help="comma-separated subset of {bigtom,tomi,fantom} or 'all'")
     ap.add_argument("--mode", choices=["base", "sft", "grpo"], default="grpo")
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--stage1_ckpt", type=str, default="")
@@ -789,23 +578,12 @@ def main():
     ap.add_argument("--out_dir", type=str, required=True)
     ap.add_argument("--benchmarks_root", type=str, default=str(default_benchmarks_root()))
 
-    ap.add_argument("--opentom_root", type=str, default="")
-    ap.add_argument("--opentom_test_path", type=str, default="")
-    ap.add_argument("--opentom_scorer_path", type=str, default="")
-    ap.add_argument("--opentom_inference", choices=["generate", "choice"], default="choice")
-    ap.add_argument("--opentom_location_granularity", type=str, default="coarse")
-    ap.add_argument("--opentom_perspective", type=str, default="all")
-
     ap.add_argument("--bigtom_csv", type=str, default="")
     ap.add_argument("--bigtom_inference", choices=["generate", "choice"], default="choice")
 
     ap.add_argument("--tomi_root", type=str, default="")
     ap.add_argument("--tomi_test_path", type=str, default="")
     ap.add_argument("--tomi_trace_path", type=str, default="")
-
-    ap.add_argument("--hitom_root", type=str, default="")
-    ap.add_argument("--hitom_path", type=str, default="")
-    ap.add_argument("--hitom_inference", choices=["generate", "choice", "official"], default="choice")
 
     ap.add_argument("--fantom_root", type=str, default="")
     ap.add_argument("--fantom_path", type=str, default="")
@@ -817,10 +595,8 @@ def main():
     ap.add_argument("--fantom_allow_model_download", action="store_true")
 
     ap.add_argument("--max_new_tokens", type=int, default=128)
-    ap.add_argument("--opentom_max_new_tokens", type=int, default=None)
     ap.add_argument("--bigtom_max_new_tokens", type=int, default=None)
     ap.add_argument("--tomi_max_new_tokens", type=int, default=None)
-    ap.add_argument("--hitom_max_new_tokens", type=int, default=None)
     ap.add_argument("--fantom_max_new_tokens", type=int, default=None)
     ap.add_argument("--log_every", type=int, default=50)
     ap.add_argument("--limit", type=int, default=None)
@@ -857,18 +633,12 @@ def main():
 
     for dataset_name in requested:
         resolved = resolved_paths[dataset_name]
-        if dataset_name == "opentom":
-            rows = _apply_limit(load_opentom_official(resolved.split_path), args.limit)
-            combined_summary["datasets"]["opentom"] = evaluate_opentom(rows, runner, args, out_dir, resolved)
-        elif dataset_name == "bigtom":
+        if dataset_name == "bigtom":
             rows = _apply_limit(load_bigtom_official(resolved.split_path), args.limit)
             combined_summary["datasets"]["bigtom"] = evaluate_bigtom(rows, runner, args, out_dir, resolved)
         elif dataset_name == "tomi":
             rows = _apply_limit(load_tomi_official(resolved.split_path, resolved.trace_path), args.limit)
             combined_summary["datasets"]["tomi"] = evaluate_tomi(rows, runner, args, out_dir, resolved)
-        elif dataset_name == "hitom":
-            rows = _apply_limit(load_hitom_official(resolved.split_path), args.limit)
-            combined_summary["datasets"]["hitom"] = evaluate_hitom(rows, runner, args, out_dir, resolved)
         elif dataset_name == "fantom":
             rows = _apply_limit(load_fantom_official(resolved.split_path, input_type=args.fantom_input_type), args.limit)
             combined_summary["datasets"]["fantom"] = evaluate_fantom(rows, runner, args, out_dir, resolved)

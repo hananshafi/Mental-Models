@@ -17,7 +17,17 @@ REQUIRED = (
     "projects/bigtom/README.md",
     "projects/mmrole/README.md",
     "projects/fantom/README.md",
+    "projects/tomi/README.md",
+    "projects/craigslist_bargain/README.md",
 )
+EXPECTED_PROJECTS = {
+    "bigtom",
+    "craigslist_bargain",
+    "fantom",
+    "mmrole",
+    "sotopia",
+    "tomi",
+}
 MACHINE_PATHS = (
     "/" + "bigdata/",
     "/" + "bigdata1/",
@@ -50,6 +60,17 @@ def main() -> int:
     for relative in REQUIRED:
         if not (ROOT / relative).is_file():
             errors.append(f"missing required file: {relative}")
+
+    actual_projects = {
+        path.name for path in (ROOT / "projects").iterdir() if path.is_dir()
+    }
+    if actual_projects != EXPECTED_PROJECTS:
+        missing = sorted(EXPECTED_PROJECTS - actual_projects)
+        unexpected = sorted(actual_projects - EXPECTED_PROJECTS)
+        if missing:
+            errors.append(f"missing paper project directories: {missing}")
+        if unexpected:
+            errors.append(f"unexpected non-paper project directories: {unexpected}")
 
     for path in tracked_files():
         relative = path.relative_to(ROOT)

@@ -1,7 +1,7 @@
 # BigToM
 
-Text-only mental-model training pipeline and the shared official evaluation
-harness for BigToM, ToMi, OpenToM, Hi-ToM, and FANToM.
+Text-only mental-model training pipeline and the shared paper evaluation
+harness for BigToM, ToMi, and FANToM.
 
 The historical stage numbers are retained: Stage 1 trains the mental/reward
 model, Stage 3 performs latent-prefix SFT, Stage 4 performs GRPO, and Stage 5 is
@@ -10,12 +10,12 @@ evaluation. There is no missing Stage 2 script in this implementation.
 ## Setup
 
 ```bash
-./tools/bootstrap_third_party.sh bigtom tomi opentom hitom fantom
+./tools/bootstrap_third_party.sh bigtom tomi fantom
 conda activate mental-models
 ```
 
-Released benchmark files then live under `third_party/src/`; generated BigToM
-data and model artifacts remain under this project.
+Released benchmark files live under `third_party/src/`. Generated BigToM data,
+checkpoints, and run outputs remain under this project.
 
 ## 1. Generate and annotate scenarios
 
@@ -25,8 +25,8 @@ ENV_NAME=mental-models \
   bash projects/bigtom/scripts/run_generate_and_annotate.sh
 ```
 
-Useful overrides include `NUM_NEW_SCENARIOS`, `GEN_MAX_WORKERS`, `ANN_MAX_WORKERS`,
-`OUT_CSV`, and `OUT_JSONL`. The default outputs are:
+Useful overrides include `NUM_NEW_SCENARIOS`, `GEN_MAX_WORKERS`,
+`ANN_MAX_WORKERS`, `OUT_CSV`, and `OUT_JSONL`. Default outputs are:
 
 ```text
 projects/bigtom/data/bigtom_qwen.csv
@@ -82,9 +82,12 @@ python projects/bigtom/scripts/evaluate_official_benchmarks.py \
 released multiple-choice protocol. `evaluate_official_benchmarks.py` is the
 preferred unified entrypoint.
 
-## Zero-shot transfer suite
+## Zero-shot transfer
 
-Validate paths without loading a model:
+The BigToM-trained policy is transferred without target-dataset fine-tuning to
+ToMi and FANToM.
+
+Validate all paper benchmark paths without loading a model:
 
 ```bash
 python projects/bigtom/scripts/evaluate_official_benchmarks.py \
@@ -93,10 +96,8 @@ python projects/bigtom/scripts/evaluate_official_benchmarks.py \
   --dry_run
 ```
 
-Run selected transfer datasets by passing a comma-separated list such as
-`--datasets tomi,opentom,hitom,fantom`. The same Stage 1 and Stage 3/4
-checkpoints are used without target-dataset fine-tuning. Dataset-specific
-runbooks in sibling project folders describe scoring and overrides.
+Evaluate one or both transfer datasets with `--datasets tomi,fantom`. The ToMi
+and FANToM project READMEs describe dataset-specific scoring and path overrides.
 
 ## Tests and analyses
 
@@ -104,6 +105,6 @@ runbooks in sibling project folders describe scoring and overrides.
 pytest -q projects/bigtom/tests
 ```
 
-`experiments/e1/` contains ToMi belief minimal pairs. `experiments/posterior/`
-contains posterior and leave-one-component-out studies. Generated artifacts go
-to `projects/bigtom/runs/`.
+`experiments/e1/` contains ToMi belief minimal pairs.
+`experiments/posterior/` contains posterior and leave-one-component-out
+ablations. Generated artifacts belong in `projects/bigtom/runs/`.

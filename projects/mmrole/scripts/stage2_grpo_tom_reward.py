@@ -5,8 +5,8 @@ Stage 2: GRPO with Composite ToM-Reward
 Group Relative Policy Optimization with multi-component ToM-aware reward:
   R_total = α₁·R_belief + α₂·R_perspective + α₃·R_format + α₄·R_roleplay
 
-Following MindPower (arXiv:2511.23055) approach: generate group of candidates,
-score with composite reward, compute group-normalized advantages, PPO-clip update.
+Generates groups of candidates, scores them with a composite reward, computes
+group-normalized advantages, and applies a PPO-clip update.
 
 Starts from Stage 1 SFT checkpoint (LoRA).
 

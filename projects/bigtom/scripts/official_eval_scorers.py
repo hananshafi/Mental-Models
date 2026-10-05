@@ -21,29 +21,6 @@ def mean_summary(values: Iterable[float]) -> Dict[str, float]:
     return metric_value(sum(values) / len(values), len(values))
 
 
-def macro_f1_from_labels(gold_labels: List[str], pred_labels: List[str]) -> Dict[str, float]:
-    if not gold_labels:
-        return metric_value(0.0, 0)
-    labels = sorted({label for label in gold_labels if label is not None} | {label for label in pred_labels if label is not None})
-    if not labels:
-        return metric_value(0.0, 0)
-    per_label = []
-    for label in labels:
-        tp = sum(1 for gold, pred in zip(gold_labels, pred_labels) if gold == label and pred == label)
-        fp = sum(1 for gold, pred in zip(gold_labels, pred_labels) if gold != label and pred == label)
-        fn = sum(1 for gold, pred in zip(gold_labels, pred_labels) if gold == label and pred != label)
-        if tp == 0 and fp == 0 and fn == 0:
-            per_label.append(0.0)
-            continue
-        precision = tp / (tp + fp) if (tp + fp) else 0.0
-        recall = tp / (tp + fn) if (tp + fn) else 0.0
-        if precision + recall == 0:
-            per_label.append(0.0)
-        else:
-            per_label.append(2 * precision * recall / (precision + recall))
-    return metric_value(sum(per_label) / len(per_label), len(gold_labels))
-
-
 def extract_json_payload(text: str) -> Optional[Dict]:
     text = (text or "").strip()
     if not text:
@@ -96,40 +73,6 @@ def run_python_scorer(
         "stderr": completed.stderr,
         "metrics": parsed if completed.returncode == 0 else None,
     }
-
-
-def run_official_opentom_scorer(
-    *,
-    scorer_path: Optional[Path],
-    predictions_path: Path,
-    location_granularity: str = "coarse",
-    perspective: str = "all",
-) -> Optional[Dict[str, object]]:
-    if scorer_path is None or not scorer_path.exists():
-        return None
-    if scorer_supports_wrapper(scorer_path, ["--result_path", "json.dumps"]):
-        return run_python_scorer(
-            scorer_path=scorer_path,
-            args=[
-                "--result_path", str(predictions_path),
-                "--location_granularity", location_granularity,
-                "--perspective", perspective,
-            ],
-            cwd=scorer_path.parent,
-        )
-
-    bridge_path = SCRIPT_DIR / "official_eval_bridge_opentom.py"
-    benchmark_root = scorer_path.parents[1] if scorer_path.parent.name == "src" else scorer_path.parent
-    return run_python_scorer(
-        scorer_path=bridge_path,
-        args=[
-            "--predictions_path", str(predictions_path),
-            "--benchmark_root", str(benchmark_root),
-            "--location_granularity", location_granularity,
-            "--perspective", perspective,
-        ],
-        cwd=bridge_path.parent,
-    )
 
 
 def run_official_fantom_scorer(
@@ -227,67 +170,6 @@ def summarize_tomi_metrics(rows: List[Dict]) -> Dict[str, object]:
         "Accuracy": mean_summary(overall),
         "ByQuestionType": {key: mean_summary(values) for key, values in sorted(by_question_type.items())},
         "ByStoryType": {key: mean_summary(values) for key, values in sorted(by_story_type.items())},
-    }
-
-
-def summarize_hitom_metrics(rows: List[Dict]) -> Dict[str, object]:
-    overall = [row["score"] for row in rows]
-    by_question_order: Dict[str, List[float]] = defaultdict(list)
-    by_story_length: Dict[str, List[float]] = defaultdict(list)
-    by_prompting_type: Dict[str, List[float]] = defaultdict(list)
-    by_deception: Dict[str, List[float]] = defaultdict(list)
-    for row in rows:
-        if row.get("question_order") is not None:
-            by_question_order[str(row["question_order"])].append(row["score"])
-        if row.get("story_length") is not None:
-            by_story_length[str(row["story_length"])].append(row["score"])
-        if row.get("prompting_type") is not None:
-            by_prompting_type[str(row["prompting_type"])].append(row["score"])
-        if row.get("deception") is not None:
-            by_deception[str(row["deception"])].append(row["score"])
-    return {
-        "Accuracy": mean_summary(overall),
-        "ByQuestionOrder": {key: mean_summary(values) for key, values in sorted(by_question_order.items())},
-        "ByStoryLength": {key: mean_summary(values) for key, values in sorted(by_story_length.items())},
-        "ByPromptingType": {key: mean_summary(values) for key, values in sorted(by_prompting_type.items())},
-        "ByDeception": {key: mean_summary(values) for key, values in sorted(by_deception.items())},
-    }
-
-
-def summarize_opentom_metrics(rows: List[Dict]) -> Dict[str, object]:
-    accuracy_values = [row["score"] for row in rows]
-    macro_f1 = macro_f1_from_labels(
-        [row.get("gold_label", "") for row in rows],
-        [row.get("pred_label", "") for row in rows],
-    )
-    grouped_fields = {
-        "ByQuestionType": "question_type",
-        "ByPerspective": "perspective",
-        "ByToMOrder": "tom_order",
-        "ByNarrativeType": "narrative_type",
-        "ByLocationGranularity": "location_granularity",
-    }
-    grouped = {}
-    for metric_name, field_name in grouped_fields.items():
-        by_group: Dict[str, List[Dict]] = defaultdict(list)
-        for row in rows:
-            value = row.get(field_name)
-            if value is not None and str(value).strip():
-                by_group[str(value)].append(row)
-        grouped[metric_name] = {
-            key: {
-                "Accuracy": mean_summary([item["score"] for item in bucket]),
-                "MacroF1": macro_f1_from_labels(
-                    [item.get("gold_label", "") for item in bucket],
-                    [item.get("pred_label", "") for item in bucket],
-                ),
-            }
-            for key, bucket in sorted(by_group.items())
-        }
-    return {
-        "Accuracy": mean_summary(accuracy_values),
-        "MacroF1": macro_f1,
-        **grouped,
     }
 
 

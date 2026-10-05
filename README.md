@@ -1,97 +1,168 @@
-# Mental Models for Multi-Agent Reasoning
+<div align="center">
 
-Research code for learning explicit first- and second-order mental-state
-representations and using them to train language and multimodal policies. The
-repository consolidates the previously separate SOTOPIA, BigToM, MMRole,
-transfer-evaluation, and exploratory pipelines into one reproducible layout.
+<h1>Mental Models for Multi-Agent Systems</h1>
+
+<p>
+  <strong>Hanan Gani</strong> &nbsp;&middot;&nbsp;
+  <strong>Lulu Shao</strong> &nbsp;&middot;&nbsp;
+  <strong>Manmohan Chandraker</strong>
+  <br>
+  University of California, San Diego
+  <br>
+  <strong>NeurIPS 2026</strong>
+</p>
+
+<p>
+  <a href="https://example.com/mental-models">🌐 Project Page</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://example.com/mental-models-paper.pdf">📄 Paper</a>
+  &nbsp;&middot;&nbsp;
+  <a href="https://arxiv.org/abs/0000.00000">📚 arXiv</a>
+</p>
+
+<p>
+  <img alt="Python 3.10" src="https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white">
+  <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.5-EE4C2C?logo=pytorch&logoColor=white">
+  <img alt="NeurIPS 2026" src="https://img.shields.io/badge/NeurIPS-2026-8A2BE2">
+</p>
+
+</div>
+
+This repository contains the official research code for learning explicit,
+recursive mental representations of other agents and using those
+representations to train stronger language and multimodal policies.
+
+## 🧠 A motivating interaction
+
+> **Illustrative SOTOPIA-style setting.** Casey is arranging a surprise party
+> for Jordan. Jordan is present and believes Saturday's gathering is an
+> ordinary dinner. Casey asks Morgan, “Is the package ready for Saturday?”
+
+| Agent | Response | Behavior |
+|---|---|---|
+| 🤖 **Without a mental model** | “Yes—the birthday cake and surprise decorations are ready!” | Answers the literal request but leaks Casey's private goal. |
+| 🧠 **With a mental model** | “Yes, the package is ready. I will bring it after Jordan leaves.” | Tracks Jordan's belief, Casey's intent, and the secrecy constraint. |
+
+The key distinction is not better phrasing alone. The second agent acts through
+a compact representation of **what the partner believes**, **what the partner
+wants**, and **what the partner expects the agent to know**. Our method learns
+this decision-relevant state during training and distills it into the policy, so
+deployment requires no extra teacher model, reward model, or inference pass.
+
+```mermaid
+flowchart LR
+    H["💬 Interaction history"] --> M["🧠 Recursive mental model"]
+    M --> B["💭 Belief"]
+    M --> I["🎯 Intent"]
+    M --> T["🗨️ Thought"]
+    B --> R["⚖️ Mental-aware reward"]
+    I --> R
+    T --> R
+    R --> P["🤖 Trained policy"]
+```
+
+## Paper benchmarks
+
+The repository contains only the datasets and evaluations reported in the
+paper.
+
+### Training and in-domain evaluation
+
+| Benchmark | Modality | Role in the paper | Code |
+|---|---|---|---|
+| **SOTOPIA** | Language interaction | Coupled mental/reward learning, policy training, and social-agent evaluation | [`projects/sotopia`](projects/sotopia/README.md) |
+| **BigToM** | Text Theory of Mind | Mental/reward learning, latent-prefix SFT, GRPO, and controlled ToM evaluation | [`projects/bigtom`](projects/bigtom/README.md) |
+| **MMRole** | Vision-language interaction | Multimodal mental modeling and role-playing policy training | [`projects/mmrole`](projects/mmrole/README.md) |
+
+### Zero-shot transfer evaluation
+
+| Benchmark | Source policy | Purpose | Code |
+|---|---|---|---|
+| **Craigslist-Bargain** | SOTOPIA | Cross-domain negotiation transfer | [`projects/craigslist_bargain`](projects/craigslist_bargain/README.md) |
+| **ToMi** | BigToM | Synthetic first- and second-order belief transfer | [`projects/tomi`](projects/tomi/README.md) |
+| **FANToM** | BigToM | Multi-party conversational ToM transfer with official scoring | [`projects/fantom`](projects/fantom/README.md) |
+
+## Method
+
+The main pipelines share four stages:
+
+1. **Supervise mental states** with belief, intent, thought, recursive state,
+   utility, rationale, and hard-negative annotations appropriate to each task.
+2. **Train the coupled model** so the latent mental state is both reconstructive
+   and directly useful for predicting multidimensional outcomes.
+3. **Train the policy** with supervised warmup followed by mental-reward-guided
+   GRPO; MMRole also includes its DPO variant.
+4. **Evaluate and transfer** with the released benchmark splits and official
+   scorers whenever available.
 
 Large datasets, checkpoints, model caches, and run outputs are intentionally
-excluded from Git. Every project uses the same `data/`, `checkpoints/`, and
-`runs/` convention, while external benchmark repositories are pinned under
-`third_party/`.
-
-## Projects
-
-| Project | Purpose | Status |
-|---|---|---|
-| [SOTOPIA](projects/sotopia/README.md) | Coupled recursive mental/reward model, GRPO policy training, official social-agent evaluation | Main pipeline |
-| [Craigslist-Bargain](projects/craigslist_bargain/README.md) | Zero-shot negotiation transfer through the SOTOPIA competitive split | Transfer evaluation |
-| [BigToM](projects/bigtom/README.md) | Text ToM data generation, mental/reward training, latent-prefix SFT and GRPO | Main pipeline |
-| [ToMi](projects/tomi/README.md) | Zero-shot synthetic false-belief transfer and latent analysis | Transfer evaluation |
-| [FANToM](projects/fantom/README.md) | Multi-party ToM transfer with the official FANToM scorer | Transfer evaluation |
-| [OpenToM](projects/opentom/README.md) | Official benchmark transfer through the shared BigToM harness | Transfer evaluation |
-| [Hi-ToM](projects/hitom/README.md) | Higher-order ToM transfer through the shared BigToM harness | Transfer evaluation |
-| [MMRole](projects/mmrole/README.md) | Multimodal role-playing annotation, mental/reward training, SFT/GRPO/DPO, evaluation | Main pipeline |
-| [ToM-SB / AIDA](projects/tom_sb/README.md) | Security-game extension and AIDA evaluation | Research extension |
-| [MindPower](projects/mindpower/README.md) | Embodied mental-modeling pipeline scaffold | Research extension |
+excluded from Git.
 
 ## Repository layout
 
 ```text
 Mental-Models/
-├── projects/                 # One self-contained folder per dataset/task
-│   └── <project>/
-│       ├── scripts/          # Canonical runnable entrypoints
-│       ├── experiments/      # Ablations and analyses, when applicable
-│       ├── data/             # Generated/downloaded data (ignored)
-│       ├── checkpoints/      # Model artifacts (ignored)
-│       └── runs/             # Evaluation outputs and logs (ignored)
+├── projects/
+│   ├── sotopia/                # Language multi-agent training and evaluation
+│   ├── bigtom/                 # Text ToM training and shared transfer harness
+│   ├── mmrole/                 # Multimodal role-playing pipeline
+│   ├── craigslist_bargain/     # SOTOPIA zero-shot transfer
+│   ├── tomi/                   # BigToM zero-shot transfer
+│   └── fantom/                 # BigToM multi-party zero-shot transfer
 ├── third_party/
-│   ├── sources.lock.json     # Exact upstream revisions
-│   ├── overlays/             # Local source additions
-│   ├── patches/              # Minimal upstream modifications
-│   └── src/                  # Bootstrapped upstream repositories (ignored)
-├── requirements/             # Shared dependency groups
-├── environments/             # Compatibility environments
-├── tools/                    # Bootstrap, diagnostics, and validation
-└── artifacts/                # Hugging Face/model caches (ignored)
+│   ├── sources.lock.json       # Exact upstream benchmark revisions
+│   ├── overlays/               # Local SOTOPIA source additions
+│   ├── patches/                # Minimal SOTOPIA integration patch
+│   └── src/                    # Bootstrapped upstream repositories (ignored)
+├── requirements/               # Shared dependency groups
+├── environments/               # Strict compatibility environment
+├── tools/                      # Bootstrap, diagnostics, and validation
+└── artifacts/                  # Model caches (ignored)
 ```
 
-Run commands from the repository root unless a project README explicitly says
-otherwise.
+Run all commands from the repository root.
 
 ## Installation
 
 ### 1. Create the shared environment
 
-The consolidated environment covers SOTOPIA, BigToM and its transfer suites,
-MMRole, and the local MindPower pipeline:
+The shared Python 3.10 environment covers SOTOPIA, BigToM, ToMi, FANToM,
+MMRole, and Craigslist-Bargain:
 
 ```bash
 conda env create -f environment.yml
 conda activate mental-models
 ```
 
-The default file targets CUDA 12.1. For another CUDA release, install a
-compatible PyTorch build first and then install the five files under
-`requirements/`. See [the environment guide](docs/environment.md).
+The default configuration targets CUDA 12.1. See
+[`docs/environment.md`](docs/environment.md) for alternatives and the optional
+strict FANToM release environment.
 
 ### 2. Fetch pinned benchmark repositories
 
 ```bash
 ./tools/bootstrap_third_party.sh
 pip install -e third_party/src/sotopia
-pip install -e projects/mindpower
 ```
 
-To fetch only selected repositories:
+Fetch only selected sources when desired:
 
 ```bash
-./tools/bootstrap_third_party.sh sotopia bigtom tomi
+./tools/bootstrap_third_party.sh sotopia bigtom tomi fantom
 ```
 
 ### 3. Configure credentials and caches
 
 ```bash
 cp .env.example .env
-# Edit .env, then export its values into the current shell.
+# Add only the credentials required by your run.
 set -a
 source .env
 set +a
 mkdir -p artifacts/huggingface
 ```
 
-Never commit `.env`, raw key files, model weights, or generated annotations.
+Never commit `.env`, API keys, generated annotations, or model weights.
 
 ### 4. Check the installation
 
@@ -100,99 +171,69 @@ python tools/doctor.py
 python tools/validate_repository.py
 ```
 
-Use `python tools/doctor.py --strict` after downloading all upstream sources and
-installing the complete environment.
+Use `python tools/doctor.py --strict` after installing the complete environment
+and downloading every pinned upstream source.
 
-## Pipeline overview
+## Running the pipelines
 
-The main text pipelines follow the same conceptual sequence:
-
-1. **Prepare data**: download or generate scenarios and normalize them to
-   per-turn examples.
-2. **Add supervision**: annotate belief, intent, thought, recursive mental
-   state, rewards, rationales, and hard negatives as required by the dataset.
-3. **Train the mental/reward model**: jointly optimize recursive latent mental
-   variables and outcome prediction.
-4. **Train the policy**: warm-start with SFT, then optimize with the frozen
-   mental/reward model using GRPO; MMRole also contains a DPO stage.
-5. **Evaluate**: use the released benchmark split and official scorer whenever
-   available. Transfer datasets are evaluation-only.
-
-The exact commands, expected inputs, and checkpoint formats are documented in
-each project README. The most common starting points are:
+Each project README provides exact data, training, checkpoint, and evaluation
+commands. Common entrypoints are:
 
 ```bash
-# SOTOPIA data generation
+# SOTOPIA: construct training episodes
 python projects/sotopia/scripts/generate_sotopia_full_pipeline.py
 
-# BigToM data generation and annotation
+# BigToM: generate and annotate scenarios
 bash projects/bigtom/scripts/run_generate_and_annotate.sh
 
-# MMRole data preparation
+# MMRole: prepare a pilot subset
 bash projects/mmrole/scripts/run_pipeline.sh --pilot
 
-# BigToM transfer-suite configuration check (no model loading)
+# Validate BigToM, ToMi, and FANToM evaluation assets without loading a model
 python projects/bigtom/scripts/evaluate_official_benchmarks.py \
   --datasets all \
   --out_dir projects/bigtom/runs/dry_run \
   --dry_run
 ```
 
-## Data and checkpoints
-
-No large artifact was copied into this repository. Restore or regenerate files
-under the project-local ignored directories:
+Generated artifacts follow one convention:
 
 ```text
 projects/<name>/data/
 projects/<name>/checkpoints/
 projects/<name>/runs/
+artifacts/huggingface/
 ```
 
-FANToM's model registry provides the canonical checkpoint names expected by the
-transfer scripts. See [data and checkpoint conventions](docs/data-and-checkpoints.md)
-for the complete mapping.
-
-## Environments
-
-One Python 3.10 environment is used wherever dependency constraints are
-compatible. Two isolated environments remain because their released tooling
-pins incompatible core stacks:
-
-- `environments/fantom-official.yml`: the legacy FANToM release environment.
-  The primary evaluator normally calls the official scorer bridge from the
-  shared environment; use this file only if strict release reproduction is
-  required.
-- `environments/aida.yml`: AIDA/ToM-SB with Transformers 5 and vLLM.
-
-The VirtualHome or TDW simulators needed for full MindPower collection are also
-optional and are not installed by the shared environment.
+See [`docs/data-and-checkpoints.md`](docs/data-and-checkpoints.md) for expected
+checkpoint layouts and transfer-evaluation paths.
 
 ## Validation
-
-Fast source-only checks:
 
 ```bash
 python tools/validate_repository.py
 python -m compileall -q projects tools
 find projects tools -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+pytest -q projects/bigtom/tests projects/fantom/tests
 ```
 
-After installing the shared environment:
+FANToM asset-heavy tests are opt-in through
+`MENTAL_MODELS_RUN_ASSET_TESTS=1`.
 
-```bash
-pytest -q projects/bigtom/tests
-pytest -q projects/fantom/tests
-bash projects/mindpower/scripts/run_pipeline.sh --dry-run
+## Citation
+
+```bibtex
+@inproceedings{gani2026mentalmodels,
+  title     = {Mental Models for Multi-Agent Systems},
+  author    = {Gani, Hanan and Shao, Lulu and Chandraker, Manmohan},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
+}
 ```
-
-The FANToM asset tests skip large checkpoint checks unless
-`MENTAL_MODELS_RUN_ASSET_TESTS=1` is set.
 
 ## Provenance
 
-Custom scripts were consolidated without copying local datasets, caches,
-checkpoints, or transient run directories. [The source inventory](docs/source-inventory.md)
-records where each component came from and which materials were intentionally
-excluded. Upstream benchmark revisions are locked in
-`third_party/sources.lock.json`.
+[`docs/source-inventory.md`](docs/source-inventory.md) records the origin of
+each retained component and the materials deliberately excluded from Git.
+Pinned upstream revisions live in
+[`third_party/sources.lock.json`](third_party/sources.lock.json).

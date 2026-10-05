@@ -9,7 +9,6 @@ Evaluates any of:
 on:
     - BigToM   (forward_belief, forward_action, backward_belief; true/false/control)
     - ToMi     (external JSONL, optional)
-    - Hi-ToM   (external JSONL, optional)
     - FANToM   (external JSONL, optional)
 
 Metric: answer matching with optional Qwen-as-judge fallback.
@@ -384,7 +383,6 @@ def main():
     ap.add_argument("--bigtom_csv", type=str,
                     default="third_party/src/bigtom/data/bigtom/bigtom.csv")
     ap.add_argument("--tomi_path", type=str, default="")
-    ap.add_argument("--hitom_path", type=str, default="")
     ap.add_argument("--fantom_path", type=str, default="")
     ap.add_argument("--limit", type=int, default=None, help="max rows per dataset")
     ap.add_argument("--out", type=str, required=True)
@@ -422,8 +420,6 @@ def main():
     all_rows.extend(load_bigtom_eval(Path(args.bigtom_csv)))
     if args.tomi_path:
         all_rows.extend(load_jsonl_eval(Path(args.tomi_path), "tomi"))
-    if args.hitom_path:
-        all_rows.extend(load_jsonl_eval(Path(args.hitom_path), "hitom"))
     if args.fantom_path:
         all_rows.extend(load_jsonl_eval(Path(args.fantom_path), "fantom"))
 
