@@ -1,0 +1,2 @@
+sample_0,false_belief,memory
+sample_1,true_belief,first_order

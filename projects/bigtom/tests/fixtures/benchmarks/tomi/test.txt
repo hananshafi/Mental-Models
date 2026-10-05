@@ -1,0 +1,7 @@
+1 Anne entered the kitchen.
+2 Bob moved the milk to the pantry.
+3 Anne left the kitchen.
+4 Where is the milk?	pantry	2
+1 Sarah put the apple in the basket.
+2 Tom moved the apple to the table.
+3 What was Sarah's first belief about the apple?	basket	1

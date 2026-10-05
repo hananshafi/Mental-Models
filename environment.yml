@@ -1,0 +1,17 @@
+name: mental-models
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip>=24
+  - pytorch=2.5.1
+  - torchvision=0.20.1
+  - pytorch-cuda=12.1
+  - pip:
+      - -r requirements/core.txt
+      - -r requirements/analysis.txt
+      - -r requirements/evaluation.txt
+      - -r requirements/vision.txt
+      - -r requirements/dev.txt

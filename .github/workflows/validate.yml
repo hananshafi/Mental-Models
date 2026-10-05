@@ -1,0 +1,17 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  repository:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - run: python tools/validate_repository.py
+      - run: python -m compileall -q projects tools
+      - run: find projects tools -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n

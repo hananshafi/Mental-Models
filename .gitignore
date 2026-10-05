@@ -1,0 +1,56 @@
+# Local credentials
+.env
+.env.*
+!.env.example
+.openai_api_key
+*.pem
+
+# Python and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments and editor files
+.venv/
+venv/
+.idea/
+.vscode/
+*.swp
+
+# Downloaded upstream repositories and model caches
+third_party/src/
+artifacts/
+
+# Generated data, checkpoints, logs, and experiment runs
+projects/*/data/
+projects/sotopia/ablations/supervision_fraction/data/
+projects/**/checkpoints/
+projects/**/runs/
+projects/**/logs/
+projects/**/eval_results/
+projects/**/eval_answers/
+projects/**/eval_reviews/
+projects/**/images/
+projects/**/raw_data/
+projects/**/training_data*/
+projects/**/character_profiles/
+projects/**/*.jsonl
+projects/**/*.safetensors
+projects/**/*.pt
+projects/**/*.pth
+projects/**/*.bin
+projects/**/*.log
+projects/**/*.pid
+projects/**/*.tmp
+
+# FANToM local overrides
+projects/fantom/configs/models.local.json
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

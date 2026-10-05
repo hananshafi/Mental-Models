@@ -1,0 +1,37 @@
+[
+  {
+    "story_id": "story-1",
+    "story": "Mia hid the marble in the red box. Noah watched from the doorway.",
+    "perspective": "third_person",
+    "tom_order": "first_order",
+    "narrative_type": "canonical",
+    "location_granularity": "coarse",
+    "questions": [
+      {
+        "question_id": "q1",
+        "question": "Where will Noah think the marble is?",
+        "choices": [
+          "red box",
+          "blue box"
+        ],
+        "answer": 0,
+        "question_type": "belief"
+      }
+    ]
+  },
+  {
+    "sample_id": "story-2",
+    "story": "Ava saw Liam move the key to the drawer.",
+    "question": "What does Ava know?",
+    "options": {
+      "A": "the key is in the drawer",
+      "B": "the key is on the table"
+    },
+    "label": "A",
+    "question_type": "knowledge",
+    "perspective": "third_person",
+    "tom_order": "zero_order",
+    "narrative_type": "canonical",
+    "location_granularity": "coarse"
+  }
+]

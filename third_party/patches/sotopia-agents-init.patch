@@ -1,0 +1,19 @@
+diff --git a/sotopia/agents/__init__.py b/sotopia/agents/__init__.py
+index 0abc3038..2ce23a5b 100644
+--- a/sotopia/agents/__init__.py
++++ b/sotopia/agents/__init__.py
+@@ -10,6 +10,7 @@ from .llm_agent import (
+     ScriptWritingAgent,
+ )
+ from .redis_agent import RedisAgent
++from .grpo_policy_agent import GRPOPolicyAgent
+ 
+ __all__ = [
+     "BaseAgent",
+@@ -20,4 +21,5 @@ __all__ = [
+     "generate_background_conversation",
+     "RedisAgent",
+     "ScriptWritingAgent",
++    "GRPOPolicyAgent",
+ ]
+

@@ -1,0 +1,88 @@
+{
+  "conditions": {
+    "0": {
+      "policy_checkpoint": "projects/sotopia/checkpoints/grpo_agent_qwen_v3/sft_warmup",
+      "policy_checkpoint_sha256": "cf42f5c9f94631b441c9f2f9280341a5c36742b6800296f7f1b2d6775f1140fe",
+      "stage1": null
+    },
+    "100": {
+      "policy_checkpoint": "projects/sotopia/checkpoints/grpo_agent_qwen_v3/step_300",
+      "policy_checkpoint_sha256": "6fb5b801051a1c315fdcf4c238128c2d48c6aef8be80286433c73dfa2fa37013",
+      "reward_checkpoint": "projects/sotopia/checkpoints/coupled_mental_reward_qwen_v3/best",
+      "reward_checkpoint_sha256": "e0ec11c6286c73a132a63d9796409e55c0d23639cc0576a47fd2a87e236ff397"
+    },
+    "25": {
+      "annotation_stats": {
+        "complete_seven_rationale_turns": 3865,
+        "complete_seven_score_turns": 3865,
+        "complete_six_field_mental_turns": 3865,
+        "episodes": 411,
+        "hard_negative_turns": 3865,
+        "valid_stage1_turns": 3865
+      },
+      "data_path": "projects/sotopia/ablations/supervision_fraction/data/sotopia_annotations_25.jsonl",
+      "data_sha256": "c0499faf00e0788c727bba032ffe8640f12717e38e5308d82a50e2ea1912bdbc",
+      "fraction": 0.25,
+      "prewarm_epochs": 4,
+      "prewarm_path": "projects/sotopia/ablations/supervision_fraction/data/persona_prewarm_25.jsonl",
+      "prewarm_rows": 125,
+      "prewarm_sha256": "6b68c5e04b050e40c7d78b6dc35ae2355f366ad5e66ea6717a807ed8e0a5cc0c",
+      "prewarm_valid_rows": 125
+    },
+    "50": {
+      "annotation_stats": {
+        "complete_seven_rationale_turns": 7596,
+        "complete_seven_score_turns": 7596,
+        "complete_six_field_mental_turns": 7596,
+        "episodes": 823,
+        "hard_negative_turns": 7596,
+        "valid_stage1_turns": 7596
+      },
+      "data_path": "projects/sotopia/ablations/supervision_fraction/data/sotopia_annotations_50.jsonl",
+      "data_sha256": "7a15b0c3f7fe0dd99a8c6671dd8c5ff540cd7bf2afb20fff5f1848781f36b931",
+      "fraction": 0.5,
+      "prewarm_epochs": 2,
+      "prewarm_path": "projects/sotopia/ablations/supervision_fraction/data/persona_prewarm_50.jsonl",
+      "prewarm_rows": 250,
+      "prewarm_sha256": "729d95feee5d40ecf08d6e02fd5c671d0211c41cd3c87c2dc7e5b86affcd156e",
+      "prewarm_valid_rows": 250
+    }
+  },
+  "prewarm_source": {
+    "path": "projects/sotopia/data/mental_model_persona_dataset.jsonl",
+    "rows": 500,
+    "sha256": "b9de0fc8371b92c232bf195dd7a39b5229a197e81a493dce58590a664875f9ec",
+    "valid_rows": 500
+  },
+  "protocol": {
+    "dataset": "SOTOPIA",
+    "nested_subsets": true,
+    "seed": 42,
+    "selection_unit": "episode",
+    "stage1_batch_size": 4,
+    "stage1_gradient_accumulation": 8,
+    "stage1_reference_full_endpoint_steps": 3297,
+    "stage1_scheduler_total_steps": 4713,
+    "stage1_scheduler_warmup_steps": 141,
+    "stage1_target_optimizer_steps": 500,
+    "stage2_target_grpo_steps": 300
+  },
+  "source": {
+    "annotation_stats": {
+      "complete_seven_rationale_turns": 15084,
+      "complete_seven_score_turns": 15084,
+      "complete_six_field_mental_turns": 15084,
+      "episodes": 1647,
+      "hard_negative_turns": 15083,
+      "valid_stage1_turns": 15084
+    },
+    "path": "projects/sotopia/data/sotopia_turn_rewards_v3.jsonl",
+    "sha256": "2f7764504ec4ea1eb1533ac3abfac6adb23fbfc76ab19a34453887bfb826e52c"
+  },
+  "stage2_base_trajectories": {
+    "episodes": 1647,
+    "generated_annotation_fields_retained": false,
+    "path": "projects/sotopia/ablations/supervision_fraction/data/sotopia_base_trajectories_stripped.jsonl",
+    "sha256": "e096e585134fc9f7cf60cd050390f70b0d3ed3fa5dc76350952008be83fbaa4e"
+  }
+}

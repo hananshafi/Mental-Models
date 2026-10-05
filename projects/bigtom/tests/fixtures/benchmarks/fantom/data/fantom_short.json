@@ -1,0 +1,37 @@
+[
+  {
+    "sample_id": "fan-1",
+    "set_id": "dialog-1",
+    "conversation_short": "Alex told Sam that the cafe opens at eight.",
+    "question": "Does Sam know when the cafe opens?",
+    "correct_answer": "yes",
+    "wrong_answer": "no",
+    "question_type": "Answerability Binary",
+    "tom_type": "first_order"
+  },
+  {
+    "sample_id": "fan-2",
+    "set_id": "dialog-2",
+    "short_context": "Nia said the tickets are on the kitchen table.",
+    "question": "Where are the tickets?",
+    "correct_answer": "kitchen table",
+    "wrong_answer": "sofa",
+    "question_type": "Fact Question",
+    "tom_type": "none"
+  },
+  {
+    "sample_id": "fan-3",
+    "set_id": "dialog-3",
+    "short_story": "Leo asked Maya to tell Priya that the package is in the office.",
+    "question": "Who can answer where the package is?",
+    "correct_answer": [
+      "Maya",
+      "Priya"
+    ],
+    "wrong_answer": [
+      "Leo"
+    ],
+    "question_type": "Info Access List",
+    "tom_type": "second_order"
+  }
+]

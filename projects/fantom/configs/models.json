@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "dataset": {
+    "benchmark_root": "third_party/src/fantom",
+    "split_path": "third_party/src/fantom/data/fantom/fantom_v1.json",
+    "official_scorer_path": "third_party/src/fantom/eval_fantom.py",
+    "default_input_type": "short",
+    "expected_conversations": 870,
+    "expected_flattened_questions": 12832,
+    "intended_use": "evaluation_only"
+  },
+  "shared": {
+    "bigtom_root": "projects/bigtom",
+    "bigtom_scripts": "projects/bigtom/scripts",
+    "base_model": "Qwen/Qwen2.5-7B-Instruct",
+    "z_dim": 128,
+    "embedding_model": "sentence-transformers/all-roberta-large-v1"
+  },
+  "models": {
+    "qwen25_7b_base": {
+      "kind": "base",
+      "base_model": "Qwen/Qwen2.5-7B-Instruct",
+      "training_source": "none",
+      "rebuttal_role": "base-model control"
+    },
+    "bigtom_sft_epoch1": {
+      "kind": "bigtom_latent",
+      "base_model": "Qwen/Qwen2.5-7B-Instruct",
+      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt",
+      "policy_ckpt": "projects/bigtom/checkpoints/stage3_qwen_5k/epoch_1",
+      "training_source": "BigToM",
+      "rebuttal_role": "latent-prefix SFT control"
+    },
+    "bigtom_grpo_step300": {
+      "kind": "bigtom_latent",
+      "base_model": "Qwen/Qwen2.5-7B-Instruct",
+      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt",
+      "policy_ckpt": "projects/bigtom/checkpoints/stage4_qwen_5k/step_300",
+      "training_source": "BigToM",
+      "rebuttal_role": "primary latent-prefix GRPO model"
+    },
+    "bigtom_grpo_step50": {
+      "kind": "bigtom_latent",
+      "base_model": "Qwen/Qwen2.5-7B-Instruct",
+      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt",
+      "policy_ckpt": "projects/bigtom/checkpoints/stage4_qwen_5k/step_50",
+      "training_source": "BigToM",
+      "rebuttal_role": "paper-selected GRPO checkpoint"
+    },
+    "sotopia_qwen_grpo_best": {
+      "kind": "plain_adapter",
+      "base_model": "Qwen/Qwen2.5-7B-Instruct",
+      "adapter_ckpt": "projects/sotopia/checkpoints/grpo_agent_qwen_v3/best",
+      "training_source": "SOTOPIA",
+      "rebuttal_role": "policy-only cross-domain control",
+      "limitations": [
+        "The SOTOPIA mental model is used as a training-time reward.",
+        "This policy does not consume first- or second-order latent prefixes at inference."
+      ]
+    }
+  }
+}

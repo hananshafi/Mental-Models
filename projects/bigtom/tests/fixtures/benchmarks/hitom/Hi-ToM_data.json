@@ -1,0 +1,13 @@
+[
+  {
+    "sample_id": "hitom-1",
+    "story": "Emma watched Noah place the book in the locker.",
+    "question": "Where will Emma look first?",
+    "answer": "locker",
+    "choices": "A. locker, B. desk",
+    "question_order": 1,
+    "prompting_type": "mcq",
+    "deception": false,
+    "story_length": "short"
+  }
+]

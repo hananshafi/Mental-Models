@@ -1,0 +1,33 @@
+DatasetConfig:
+  dataset: three_layered_dataset
+  train_end_p: 0.1
+  eval_start_p: 0.75
+
+RunConfig:
+  eval_only: true
+  do_run_first_eval: true
+
+ModelConfig:
+  engine: Qwen2.5-7B-Instruct_lora_model
+  checkpoints_dir: projects/tom_sb/checkpoints/aida_official
+  judge_model: gemini-3-flash-preview
+  attacker_type: verifying_attacker_swapable_prompt
+  defender_type: integrated_defender_with_reflection_v2
+
+Redundant:
+  training_strategy: TrajectorywiseGRPO
+  epochs: 1
+  max_grad_norm: 1.0
+  reward_functions: backward_ToM_belief
+  enable_lock_on_generate: true
+  max_iterations: 15
+  num_generations: 8
+  max_completion_length: 20000
+  loss_type: dr_grpo
+  learning_rate: 1.0e-5
+  gradient_accumulation_steps: 1
+  lr_scheduler: linear
+  rank: 16
+  target_modules: all-linear
+  alpha: 32
+  lr_warmup_ratio: 0.0

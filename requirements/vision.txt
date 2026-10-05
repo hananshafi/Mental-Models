@@ -1,0 +1,3 @@
+av>=13,<17
+pillow>=11,<13
+qwen-vl-utils>=0.0.8
