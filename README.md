@@ -21,8 +21,6 @@
 </p>
 
 <p>
-  <img alt="Python 3.10" src="https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white">
-  <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-2.5-EE4C2C?logo=pytorch&logoColor=white">
   <img alt="NeurIPS 2026" src="https://img.shields.io/badge/NeurIPS-2026-8A2BE2">
 </p>
 
