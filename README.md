@@ -49,14 +49,14 @@ deployment requires no extra teacher model, reward model, or inference pass.
 
 ```mermaid
 flowchart LR
-    H["💬 Interaction history"] --> M["🧠 Recursive mental model"]
-    M --> B["💭 Belief"]
-    M --> I["🎯 Intent"]
-    M --> T["🗨️ Thought"]
-    B --> R["⚖️ Mental-aware reward"]
-    I --> R
-    T --> R
-    R --> P["🤖 Trained policy"]
+    H["💬 Interaction history"] --- M["🧠 Recursive mental model"]
+    M --- B["💭 Belief"]
+    M --- I["🎯 Intent"]
+    M --- T["🗨️ Thought"]
+    B --- R["⚖️ Mental-aware reward"]
+    I --- R
+    T --- R
+    R --- P["🤖 Trained policy"]
 ```
 
 ## Paper benchmarks
