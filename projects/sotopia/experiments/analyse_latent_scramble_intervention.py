@@ -90,7 +90,7 @@ def load_model(model_name: str, checkpoint_dir: Path, device: torch.device, z_di
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    base = AutoModelForCausalLM.from_pretrained(model_name, dtype=torch.bfloat16)
+    base = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16)
     base.config.use_cache = False
     base = PeftModel.from_pretrained(base, checkpoint_dir / "lora_adapter")
     model = RecursiveToMModel(base, reward_dim=REWARD_DIM, z_dim=z_dim)

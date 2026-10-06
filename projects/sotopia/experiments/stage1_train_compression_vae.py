@@ -707,7 +707,7 @@ def main() -> None:
     print(f"Loading base model: {args.model_name}", flush=True)
     base_model = AutoModelForCausalLM.from_pretrained(
         args.model_name,
-        dtype=torch.bfloat16,
+        torch_dtype=torch.bfloat16,
         device_map="auto",
     )
     base_model.gradient_checkpointing_enable()

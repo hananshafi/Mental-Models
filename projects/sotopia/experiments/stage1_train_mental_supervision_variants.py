@@ -305,7 +305,7 @@ def main() -> None:
         tokenizer.pad_token = tokenizer.eos_token
 
     print(f"Loading base model: {args.model_name}", flush=True)
-    base_model = AutoModelForCausalLM.from_pretrained(args.model_name, dtype=torch.bfloat16, device_map="auto")
+    base_model = AutoModelForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.bfloat16, device_map="auto")
     base_model.gradient_checkpointing_enable()
     base_model.enable_input_require_grads()
     base_model.config.use_cache = False

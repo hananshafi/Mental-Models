@@ -72,7 +72,7 @@ def load_model(args, device: torch.device):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    base = AutoModelForCausalLM.from_pretrained(args.model_name, dtype=torch.bfloat16)
+    base = AutoModelForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.bfloat16)
     base.config.use_cache = False
     base = PeftModel.from_pretrained(base, Path(args.checkpoint_dir) / "lora_adapter")
     model = CompressionVAEModel(
