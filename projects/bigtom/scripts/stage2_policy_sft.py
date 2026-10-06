@@ -94,16 +94,30 @@ def load_stage1_encoder(
     )
     base.config.pad_token_id = tok.pad_token_id
 
+    # The Stage 1 heads were trained on LoRA-adapted hidden states; loading them
+    # on the plain base model silently yields a mismatched encoder and reward.
     lora_dir = stage1_ckpt / "lora"
-    if lora_dir.exists():
-        base = PeftModel.from_pretrained(base, str(lora_dir), is_trainable=False)
+    if not (lora_dir / "adapter_config.json").is_file():
+        raise FileNotFoundError(
+            f"Stage 1 checkpoint {stage1_ckpt} has no LoRA adapter at {lora_dir}. "
+            "Retrain Stage 1 with the current stage1_train_mental_reward.py, which "
+            "saves lora/ next to heads.pt."
+        )
+    base = PeftModel.from_pretrained(base, str(lora_dir), is_trainable=False)
 
     model = RecursiveToMModel(base, z_dim=z_dim).to(device)
     heads_pt = stage1_ckpt / "heads.pt"
     ckpt = torch.load(heads_pt, map_location=device)
     state_dict = ckpt["state_dict"]
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
-    print(f"  loaded stage1 heads (missing={len(missing)}, unexpected={len(unexpected)})")
+    backbone_prefixes = ("base_model.", "transformer.")
+    missing_heads = [k for k in missing if not k.startswith(backbone_prefixes)]
+    if missing_heads or unexpected:
+        raise RuntimeError(
+            f"Stage 1 heads in {heads_pt} do not match the model: "
+            f"missing={missing_heads[:10]} unexpected={unexpected[:10]}"
+        )
+    print(f"  loaded stage1 LoRA from {lora_dir} and {len(state_dict)} head tensors")
     model.eval()
     for p in model.parameters():
         p.requires_grad = False

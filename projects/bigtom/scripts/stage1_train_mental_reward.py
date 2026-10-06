@@ -648,6 +648,10 @@ def main():
             },
             out_dir / "heads.pt",
         )
+        # heads.pt excludes the backbone, so the trained encoder LoRA is saved
+        # separately; Stage 2/3 and evaluation load both.
+        model.base_model.save_pretrained(out_dir / "lora")
+        tok.save_pretrained(out_dir / "lora")
 
     def avg_metrics(rows):
         if not rows:
