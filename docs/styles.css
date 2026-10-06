@@ -1077,6 +1077,15 @@ td strong {
   font-size: 0.76rem;
 }
 
+.posterior-heading {
+  margin: 1.35rem 0 0.65rem;
+  color: #263957;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .mini-comparison {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -56,10 +56,10 @@
           <span></span><span></span>
         </button>
         <nav class="site-menu" id="site-menu">
-          <a href="#overview">Overview</a>
-          <a href="#method">Method</a>
-          <a href="#results">Results</a>
-          <a href="#transfer">Transfer</a>
+          <a href="#overview">Introduction</a>
+          <a href="#method">Methodology</a>
+          <a href="#results">Experimentation</a>
+          <a href="#transfer">Generalization</a>
           <a href="#citation">Citation</a>
           <a class="nav-code" href="https://github.com/hananshafi/Mental-Models">Code</a>
         </nav>
@@ -74,8 +74,8 @@
             <span>for Multi-Agent Systems</span>
           </h1>
           <p class="hero-dek">
-            Agents that explicitly model what others believe, intend, and expect can make better
-            decisions under partial observability—without adding an extra inference pass at deployment.
+            An amortized latent belief state inferred from interaction history provides a stable
+            training signal for multi-agent policy learning under partial observability.
           </p>
 
           <div class="authors" aria-label="Authors">
@@ -123,8 +123,8 @@
               alt="A partially observable negotiation, inferred buyer and seller mental states, and a successful mental-model-enabled interaction."
             />
             <figcaption id="teaser-caption">
-              Explicitly modeling hidden beliefs, goals, and likely strategies helps an agent choose
-              adaptive actions across negotiation, cooperation, competition, and assistance.
+              The framework models hidden goals, beliefs, knowledge, strategies, and higher-order
+              expectations, then uses a mental-model-conditioned utility to train a standalone policy.
             </figcaption>
           </figure>
         </div>
@@ -133,8 +133,8 @@
       <section class="section" id="overview">
         <div class="container">
           <div class="section-heading">
-            <p class="section-kicker">01 · Motivation</p>
-            <h2>Model the person behind the observation.</h2>
+            <p class="section-kicker">01 · Introduction</p>
+            <h2>Mental-Model-Enabled Agents under Partial Observability</h2>
           </div>
           <div class="overview-grid">
             <div class="overview-lead">
@@ -148,13 +148,12 @@
             <div class="abstract-block">
               <h3>Abstract</h3>
               <p>
-                We introduce <strong>mental-model-enabled agents</strong>, a framework that learns a
-                latent model of a counterpart from interaction history and uses it as a reusable
-                decision variable. The model represents first- and second-order mental states and is
-                trained jointly with a belief-conditioned reward model. This signal then guides
-                policy optimization, while the final policy acts independently at inference time.
-                Across language-only and multimodal benchmarks, explicit mental-state modeling
-                improves interaction quality and Theory-of-Mind performance over base agents.
+                We introduce <strong>mental-model-enabled agents</strong> for multi-agent systems under
+                partial observability. The framework learns a compact latent belief state from
+                interaction history, jointly trains it with a mental-model-conditioned utility, and
+                uses the resulting signal for policy learning. The final policy remains standalone
+                at inference time. Across language-only and multimodal benchmarks, explicit
+                mental-state modeling improves downstream multi-agent performance.
               </p>
             </div>
           </div>
@@ -162,18 +161,18 @@
           <div class="capability-grid" aria-label="Core capabilities">
             <article class="capability capability-belief">
               <span class="capability-number">01</span>
-              <h3>Infer</h3>
-              <p>Estimate a partner’s beliefs, intent, task-relevant thoughts, and uncertainty.</p>
+              <h3>Explicit Latent Belief State</h3>
+              <p>Infer hidden goals, beliefs, knowledge, strategies, and higher-order expectations from observed history.</p>
             </article>
             <article class="capability capability-recursive">
               <span class="capability-number">02</span>
-              <h3>Recurse</h3>
-              <p>Represent what the partner believes about the acting agent and the shared state.</p>
+              <h3>Recursive Mental-State Architecture</h3>
+              <p>Represent first- and second-order belief, intent, and thought subspaces.</p>
             </article>
             <article class="capability capability-action">
               <span class="capability-number">03</span>
-              <h3>Act</h3>
-              <p>Use the inferred state to prefer actions that satisfy task and social constraints.</p>
+              <h3>Coupled Mental-State/Reward Learning</h3>
+              <p>Make partner representations directly useful for evaluating candidate actions.</p>
             </article>
           </div>
         </div>
@@ -182,11 +181,11 @@
       <section class="section section-tinted" id="method">
         <div class="container-wide">
           <div class="section-heading centered">
-            <p class="section-kicker">02 · Method</p>
-            <h2>Partner modeling shapes training, not deployment cost.</h2>
+            <p class="section-kicker">02 · Methodology</p>
+            <h2>Methodology</h2>
             <p class="section-intro">
-              The mental-state encoder and reward model are coupled so that the latent is both
-              interpretable and useful for evaluating candidate actions.
+              We jointly learn an amortized recursive mental-model and a mental-model-conditioned
+              utility, then use the learned signal to train a standalone policy.
             </p>
           </div>
 
@@ -204,18 +203,18 @@
           <div class="method-steps">
             <article>
               <span>Phase 1</span>
-              <h3>Learn a recursive latent state</h3>
-              <p>Infer first- and second-order mental states from the observed interaction history.</p>
+              <h3>Amortized Mental-Model and Reward Learning</h3>
+              <p>Jointly learn recursive mental states and a utility model over candidate actions.</p>
             </article>
             <article>
               <span>Phase 2</span>
-              <h3>Score policy-sampled actions</h3>
-              <p>Use the frozen mental-conditioned reward model to guide policy optimization.</p>
+              <h3>Policy Learning under Mental-Conditioned Reward</h3>
+              <p>Score sampled actions with the learned mental reward and optimize the policy.</p>
             </article>
             <article>
               <span>Phase 3</span>
-              <h3>Deploy the policy alone</h3>
-              <p>No teacher, mental-state encoder, or reward model is required at test time.</p>
+              <h3>Standalone Policy Deployment</h3>
+              <p>Deploy only the trained policy in the multi-agent setting.</p>
             </article>
           </div>
 
@@ -229,8 +228,8 @@
       <section class="section" id="results">
         <div class="container">
           <div class="section-heading">
-            <p class="section-kicker">03 · Results</p>
-            <h2>One framework, complementary evidence.</h2>
+            <p class="section-kicker">03 · Experimentation</p>
+            <h2>Main Experimentation Results</h2>
             <p class="section-intro">
               We test open-ended social interaction, controlled belief tracking, and multimodal
               role-playing with the same mental-model learning principle.
@@ -308,7 +307,7 @@
                 </figure>
                 <div class="result-copy">
                   <p class="result-eyebrow">SOTOPIA-All · GPT-4o-mini partner</p>
-                  <h3>Consistent gains across three 7B model families.</h3>
+                  <h3>Results on SOTOPIA</h3>
                   <p>
                     Mental-model guidance improves the overall score for LLaMA, Mistral, and Qwen,
                     with the largest gain on Qwen2.5-7B.
@@ -338,7 +337,7 @@
             >
               <div class="result-copy result-copy-wide">
                 <p class="result-eyebrow">Paired true-belief and false-belief accuracy</p>
-                <h3>The model maintains counterfactual mental states more consistently.</h3>
+                <h3>Results on BigToM</h3>
                 <p>
                   TB∧FB gives credit only when both branches of the same scenario are correct. Our
                   model improves paired consistency across forward belief, forward action, and
@@ -378,7 +377,7 @@
             >
               <div class="result-copy result-copy-wide">
                 <p class="result-eyebrow">Official normalized multimodal role-play metrics</p>
-                <h3>Improvement extends to held-out character and image contexts.</h3>
+                <h3>Results on MMRole</h3>
                 <p>
                   The strongest gains occur on coherence, response accuracy, personality
                   consistency, knowledge consistency, and tone consistency—dimensions that require
@@ -405,8 +404,8 @@
       <section class="section section-dark" id="transfer">
         <div class="container">
           <div class="section-heading light-heading">
-            <p class="section-kicker">04 · Transfer</p>
-            <h2>The learned signal travels beyond its training benchmark.</h2>
+            <p class="section-kicker">04 · Generalization</p>
+            <h2>Cross-Domain Transfer and OOD Generalization</h2>
             <p class="section-intro">
               Transfer datasets are evaluation-only: no target labels are used for policy training.
             </p>
@@ -451,7 +450,7 @@
         <div class="container">
           <div class="section-heading">
             <p class="section-kicker">05 · Analysis</p>
-            <h2>How much supervision is enough?</h2>
+            <h2>Analysis and Ablations</h2>
           </div>
 
           <div class="analysis-grid">
@@ -459,7 +458,7 @@
               <div class="analysis-card-heading">
                 <div>
                   <p class="result-eyebrow">SOTOPIA · Qwen2.5-7B</p>
-                  <h3>Mental supervision improves the policy progressively.</h3>
+                  <h3>Sensitivity to Mental-State Supervision</h3>
                 </div>
                 <span>Overall score · axis 3.2–3.9</span>
               </div>
@@ -482,8 +481,8 @@
             </article>
 
             <article class="evidence-card">
-              <p class="result-eyebrow">Annotation and posterior checks</p>
-              <h3>Validated supervision, economical latent structure.</h3>
+              <p class="result-eyebrow">MMRole · BigToM</p>
+              <h3>Mental-State Annotation and Human Verification</h3>
               <div class="evidence-stat">
                 <strong>98.04%</strong>
                 <span>MMRole training turns retained after six automated checks.</span>
@@ -492,6 +491,7 @@
                 <strong>4.45 / 5</strong>
                 <span>Mean faithfulness in a blinded human audit of 100 annotations.</span>
               </div>
+              <h4 class="posterior-heading">Posterior-Family Ablation</h4>
               <div class="mini-comparison">
                 <div><span>Diagonal Gaussian</span><strong>96.6</strong><small>reward accuracy</small></div>
                 <div><span>Full covariance</span><strong>96.8</strong><small>reward accuracy</small></div>
@@ -508,8 +508,8 @@
       <section class="section section-tinted" id="citation">
         <div class="container citation-grid">
           <div class="section-heading">
-            <p class="section-kicker">06 · Citation</p>
-            <h2>Use the code, extend the setting, cite the work.</h2>
+            <p class="section-kicker">06</p>
+            <h2>Citation</h2>
             <p class="section-intro">
               The repository contains separate pipelines for every benchmark reported in the paper,
               plus reproducible transfer evaluators and pinned upstream sources.
