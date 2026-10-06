@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -50,7 +51,33 @@ SECRET_PATTERNS = (
 )
 
 
+def git_candidate_files() -> list[Path] | None:
+    """Files git would commit (tracked or untracked but not ignored).
+
+    Ignored local artifacts such as downloaded data, checkpoints, and runs are
+    excluded, so the check passes after following the installation guide.
+    Returns None outside a git checkout.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files", "--cached", "--others",
+             "--exclude-standard", "-z"],
+            capture_output=True, text=True, check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return [ROOT / relative for relative in result.stdout.split("\0") if relative]
+
+
 def tracked_files() -> list[Path]:
+    candidates = git_candidate_files()
+    if candidates is not None:
+        return [
+            path for path in candidates
+            if path.is_file()
+            and not any(part in SKIP_PARTS for part in path.relative_to(ROOT).parts)
+        ]
+
     files = []
     for path in ROOT.rglob("*"):
         if not path.is_file():
