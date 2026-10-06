@@ -30,6 +30,10 @@ couple them to reward prediction, and use the resulting signal to train language
 and multimodal policies. The trained policy acts independently at deployment:
 it does not require a teacher model, reward model, or additional inference pass.
 
+<p align="center">
+  <img src="assets/mental-model-concept.svg" width="100%" alt="Comparison of an agent without mental-model training and an agent trained with belief, intent, and recursive mental-state signals.">
+</p>
+
 ## Mental models for interaction
 
 Our framework gives an agent three connected capabilities:
@@ -39,27 +43,13 @@ Our framework gives an agent three connected capabilities:
 - **Act:** use this latent state to prefer decisions that better satisfy shared,
   private, and social constraints.
 
-### Example: protecting a partner's private goal
+### Reading the example
 
-> **Scenario.** In this illustrative SOTOPIA-style interaction, Casey is
-> arranging a surprise party for Jordan. Jordan believes Saturday's gathering
-> is an ordinary dinner. With Jordan present, Casey asks Morgan: “Is the package
-> ready for Saturday?”
-
-**🤖 Agent without mental-model training**
-
-> “Yes—the birthday cake and surprise decorations are ready!”
-
-The response answers the literal question but exposes Casey's private goal.
-
-**🧠 Agent trained with our mental-model signal**
-
-> “Yes, the package is ready. I will bring it after Jordan leaves.”
-
-The response remains useful while respecting Casey's intent, Jordan's current
-belief, and the secrecy constraint. This is the behavior our training objective
-is designed to encourage; the mental representation itself is used during
-training and is distilled into the deployed policy.
+Both agents receive the same illustrative SOTOPIA-style interaction. The
+text-only response answers Casey's literal question but reveals the surprise.
+The mental-model-trained response instead accounts for Casey's intent, Jordan's
+belief, and what each person expects the others to know. It remains useful
+without exposing the private goal.
 
 ## Paper benchmarks
 

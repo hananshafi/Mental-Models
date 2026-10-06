@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="740" viewBox="0 0 1400 740" role="img" aria-labelledby="title description">
+  <title id="title">Mental-model training changes how an agent handles private information</title>
+  <desc id="description">A colorful comparison of two agents answering the same question. The text-only agent reveals a surprise party, while the mental-model-trained agent tracks belief, intent, and recursive state to protect the secret.</desc>
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F8FAFF"/>
+      <stop offset="55%" stop-color="#F5F3FF"/>
+      <stop offset="100%" stop-color="#ECFEFF"/>
+    </linearGradient>
+    <linearGradient id="casey" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+    <linearGradient id="plainPanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF7F7"/>
+      <stop offset="100%" stop-color="#FFF1F2"/>
+    </linearGradient>
+    <linearGradient id="mentalPanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F0FDFA"/>
+      <stop offset="100%" stop-color="#ECFEFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#34416A" flood-opacity="0.14"/>
+    </filter>
+    <style>
+      .title { font: 700 34px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; fill: #17213E; }
+      .subtitle { font: 500 17px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; fill: #667085; }
+      .panel-title { font: 700 20px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; letter-spacing: 1px; }
+      .label { font: 700 14px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; letter-spacing: 0.7px; }
+      .body { font: 500 18px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; fill: #28324D; }
+      .small { font: 500 15px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; fill: #59647D; }
+      .tiny { font: 600 13px Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; fill: #697386; }
+    </style>
+  </defs>
+
+  <rect width="1400" height="740" rx="32" fill="url(#canvas)"/>
+  <circle cx="70" cy="80" r="42" fill="#DDD6FE" opacity="0.55"/>
+  <circle cx="1340" cy="680" r="74" fill="#A5F3FC" opacity="0.38"/>
+  <circle cx="1295" cy="82" r="28" fill="#FBCFE8" opacity="0.65"/>
+
+  <text x="700" y="54" text-anchor="middle" class="title">Same conversation. Different model of the people in it.</text>
+  <text x="700" y="84" text-anchor="middle" class="subtitle">An illustrative SOTOPIA-style private-information interaction</text>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="112" width="1240" height="126" rx="24" fill="#FFFFFF"/>
+  </g>
+  <circle cx="145" cy="166" r="34" fill="url(#casey)"/>
+  <circle cx="145" cy="157" r="11" fill="#FFFFFF" opacity="0.95"/>
+  <path d="M125 184 C130 168 160 168 165 184" fill="#FFFFFF" opacity="0.95"/>
+  <text x="145" y="218" text-anchor="middle" class="tiny">CASEY</text>
+
+  <rect x="202" y="134" width="690" height="66" rx="18" fill="#F4F1FF" stroke="#C4B5FD" stroke-width="2"/>
+  <path d="M202 175 L184 188 L206 184" fill="#F4F1FF" stroke="#C4B5FD" stroke-width="2" stroke-linejoin="round"/>
+  <text x="230" y="174" class="body">“Is the package ready for Saturday?”</text>
+
+  <rect x="946" y="132" width="322" height="70" rx="18" fill="#FFF8E7" stroke="#FBBF24" stroke-width="2"/>
+  <circle cx="980" cy="167" r="18" fill="#F59E0B"/>
+  <circle cx="980" cy="161" r="6" fill="#FFFFFF"/>
+  <path d="M970 176 C973 168 987 168 990 176" fill="#FFFFFF"/>
+  <text x="1010" y="158" class="label" fill="#92400E">JORDAN IS LISTENING</text>
+  <text x="1010" y="181" class="small">Believes it is a normal dinner</text>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="276" width="570" height="394" rx="28" fill="url(#plainPanel)" stroke="#FECDD3" stroke-width="2"/>
+    <rect x="750" y="276" width="570" height="394" rx="28" fill="url(#mentalPanel)" stroke="#99F6E4" stroke-width="2"/>
+  </g>
+
+  <rect x="112" y="304" width="248" height="38" rx="19" fill="#FFE4E6"/>
+  <circle cx="136" cy="323" r="11" fill="#EF4444"/>
+  <path d="M131 318 L141 328 M141 318 L131 328" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="158" y="328" class="panel-title" fill="#BE123C">WITHOUT MENTAL MODEL</text>
+
+  <rect x="112" y="364" width="506" height="136" rx="20" fill="#FFFFFF" stroke="#FDA4AF" stroke-width="2"/>
+  <circle cx="155" cy="408" r="25" fill="#94A3B8"/>
+  <circle cx="155" cy="401" r="8" fill="#FFFFFF"/>
+  <path d="M141 421 C145 410 165 410 169 421" fill="#FFFFFF"/>
+  <text x="193" y="396" class="label" fill="#64748B">MORGAN</text>
+  <text x="193" y="427" class="body">
+    <tspan x="193" dy="0">“Yes—the birthday cake and</tspan>
+    <tspan x="193" dy="27">surprise decorations are ready!”</tspan>
+  </text>
+
+  <rect x="112" y="526" width="506" height="108" rx="20" fill="#FFF1F2" stroke="#FB7185" stroke-width="2"/>
+  <g transform="translate(142 548)">
+    <path d="M4 18 V11 C4 1 20 1 20 11 V18" fill="none" stroke="#E11D48" stroke-width="3" stroke-linecap="round"/>
+    <rect x="0" y="17" width="25" height="22" rx="5" fill="#E11D48"/>
+    <path d="M12 23 V32" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+    <path d="M27 4 L38 15" stroke="#E11D48" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <text x="197" y="559" class="label" fill="#BE123C">PRIVATE GOAL EXPOSED</text>
+  <text x="197" y="586" class="small">
+    <tspan x="197" dy="0">The response follows the surface text,</tspan>
+    <tspan x="197" dy="22">but ignores who knows what.</tspan>
+  </text>
+
+  <rect x="782" y="304" width="286" height="38" rx="19" fill="#CCFBF1"/>
+  <circle cx="806" cy="323" r="11" fill="#10B981"/>
+  <path d="M801 323 L805 327 L812 318" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="828" y="328" class="panel-title" fill="#047857">MENTAL-MODEL TRAINED</text>
+
+  <rect x="782" y="362" width="154" height="102" rx="18" fill="#F5F3FF" stroke="#C4B5FD" stroke-width="2"/>
+  <circle cx="809" cy="390" r="17" fill="#7C3AED"/>
+  <text x="809" y="396" text-anchor="middle" class="label" fill="#FFFFFF">B</text>
+  <text x="835" y="394" class="label" fill="#6D28D9">BELIEF</text>
+  <text x="800" y="426" class="tiny">
+    <tspan x="800" dy="0">Jordan does not</tspan>
+    <tspan x="800" dy="18">know the surprise</tspan>
+  </text>
+
+  <rect x="956" y="362" width="154" height="102" rx="18" fill="#FFF7ED" stroke="#FDBA74" stroke-width="2"/>
+  <circle cx="983" cy="390" r="17" fill="#F97316"/>
+  <text x="983" y="396" text-anchor="middle" class="label" fill="#FFFFFF">I</text>
+  <text x="1009" y="394" class="label" fill="#C2410C">INTENT</text>
+  <text x="974" y="426" class="tiny">
+    <tspan x="974" dy="0">Casey wants to</tspan>
+    <tspan x="974" dy="18">preserve secrecy</tspan>
+  </text>
+
+  <rect x="1130" y="362" width="158" height="102" rx="18" fill="#EFF6FF" stroke="#93C5FD" stroke-width="2"/>
+  <circle cx="1157" cy="390" r="17" fill="#2563EB"/>
+  <text x="1157" y="396" text-anchor="middle" class="label" fill="#FFFFFF">R²</text>
+  <text x="1183" y="394" class="label" fill="#1D4ED8">RECURSIVE</text>
+  <text x="1148" y="426" class="tiny">
+    <tspan x="1148" dy="0">Models what each</tspan>
+    <tspan x="1148" dy="18">person expects</tspan>
+  </text>
+
+  <rect x="782" y="486" width="506" height="112" rx="20" fill="#FFFFFF" stroke="#5EEAD4" stroke-width="2"/>
+  <circle cx="825" cy="528" r="25" fill="#14B8A6"/>
+  <circle cx="825" cy="521" r="8" fill="#FFFFFF"/>
+  <path d="M811 541 C815 530 835 530 839 541" fill="#FFFFFF"/>
+  <text x="863" y="516" class="label" fill="#0F766E">MORGAN</text>
+  <text x="863" y="547" class="body">
+    <tspan x="863" dy="0">“Yes, the package is ready.</tspan>
+    <tspan x="863" dy="27">I’ll bring it after Jordan leaves.”</tspan>
+  </text>
+
+  <rect x="782" y="616" width="506" height="34" rx="17" fill="#D1FAE5"/>
+  <circle cx="805" cy="633" r="9" fill="#10B981"/>
+  <path d="M801 633 L804 636 L810 629" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="825" y="638" class="label" fill="#047857">USEFUL RESPONSE · PRIVATE INTENT PRESERVED</text>
+
+  <text x="700" y="711" text-anchor="middle" class="subtitle">The latent mental state guides training; the deployed policy responds in one pass.</text>
+</svg>
