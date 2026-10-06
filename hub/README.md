@@ -109,14 +109,27 @@ configs:
     path: data/mmrole/test_in/preference_pairs_mmrole_reward_openai.jsonl
 ---
 
-# Mental Models for Multi-Agent Systems
+# Mental Model Annotation Dataset
 
-Prepared training and evaluation data for **Mental Models for Multi-Agent
-Systems** (NeurIPS 2026) by Hanan Gani, Lulu Shao, and Manmohan Chandraker.
+## Dataset for *Mental Models for Multi-Agent Systems*
 
-The repository contains the paper-ready SOTOPIA, BigToM, and MMRole data in one
-Hugging Face dataset repository. Independent configurations keep their distinct
-schemas compatible with the Dataset Viewer.
+This is the official annotation release accompanying the NeurIPS 2026 paper
+***Mental Models for Multi-Agent Systems*** by [Hanan
+Gani](https://hananshafi.github.io/), [Lulu
+Shao](https://www.linkedin.com/in/lulu-shao-89a477210), and [Manmohan
+Chandraker](https://cseweb.ucsd.edu/~mkchandraker/) at the University of
+California, San Diego.
+
+**Paper resources:** [Project page](https://hananshafi.github.io/Mental-Models/)
+| [Code](https://github.com/hananshafi/Mental-Models) | Paper and arXiv links
+will be added upon release.
+
+The paper studies explicit, recursive mental representations for multi-agent
+decision-making. This dataset contains the mental-state, reward, rationale, and
+preference supervision used for its SOTOPIA, BigToM, and MMRole experiments.
+The files augment these established benchmarks; they are not a new replacement
+for the original benchmark datasets. Independent configurations preserve each
+benchmark's schema and remain compatible with the Hugging Face Dataset Viewer.
 
 ## Contents
 
