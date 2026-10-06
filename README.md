@@ -241,8 +241,7 @@ FANToM asset-heavy tests are opt-in through
 
 This repository combines code written for this paper with released benchmark
 repositories. To make the setup auditable and reproducible, we record where
-each component came from and the exact external version used. This record is
-often called **provenance**.
+each component came from and the exact external version used.
 
 - [`docs/source-inventory.md`](docs/source-inventory.md) explains which custom
   scripts were retained, where they came from, and which generated or large
