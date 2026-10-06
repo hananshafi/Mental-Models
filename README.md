@@ -149,18 +149,36 @@ Fetch only selected sources when desired:
 ./tools/bootstrap_third_party.sh sotopia bigtom tomi fantom
 ```
 
-### 3. Configure credentials and caches
+### 3. Optional: add API keys and choose model storage
+
+Skip this step if you only want to inspect the code or run source-level
+validation. API keys are needed only for scripts that call an external service:
+
+- `OPENAI_API_KEY`: OpenAI-based annotation, partner, or judge runs;
+- `GOOGLE_API_KEY`: Gemini baselines or evaluators;
+- `HF_TOKEN`: gated Hugging Face models or datasets;
+- `WANDB_API_KEY`: optional Weights & Biases experiment logging.
+
+Copy the template and fill in only the values required by your run:
 
 ```bash
 cp .env.example .env
-# Add only the credentials required by your run.
+# Edit .env locally. Do not add it to Git.
 set -a
 source .env
 set +a
+```
+
+Model and dataset downloads can be large. By default, `.env.example` directs
+Hugging Face downloads to the ignored `artifacts/huggingface/` directory:
+
+```bash
 mkdir -p artifacts/huggingface
 ```
 
-Never commit `.env`, API keys, generated annotations, or model weights.
+You may change `HF_HOME`, `TRANSFORMERS_CACHE`, and `HF_DATASETS_CACHE` in
+`.env` to use a larger disk. The `.env` file, caches, generated annotations,
+and model weights are local artifacts and must never be committed.
 
 ### 4. Check the installation
 
@@ -229,9 +247,21 @@ FANToM asset-heavy tests are opt-in through
 }
 ```
 
-## Provenance
+## Code origins and reproducibility
 
-[`docs/source-inventory.md`](docs/source-inventory.md) records the origin of
-each retained component and the materials deliberately excluded from Git.
-Pinned upstream revisions live in
-[`third_party/sources.lock.json`](third_party/sources.lock.json).
+This repository combines code written for this paper with released benchmark
+repositories. To make the setup auditable and reproducible, we record where
+each component came from and the exact external version used. This record is
+often called **provenance**.
+
+- [`docs/source-inventory.md`](docs/source-inventory.md) explains which custom
+  scripts were retained, where they came from, and which generated or large
+  files were intentionally excluded.
+- [`third_party/sources.lock.json`](third_party/sources.lock.json) records each
+  external repository URL and exact Git commit.
+- [`third_party/`](third_party/README.md) contains the visible patches and
+  overlays applied to those pinned repositories.
+
+Running `./tools/bootstrap_third_party.sh` uses this information to reconstruct
+the same external benchmark code without committing third-party repositories
+or large datasets into this project.
