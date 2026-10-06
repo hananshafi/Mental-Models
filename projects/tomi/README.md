@@ -13,7 +13,8 @@ python projects/bigtom/scripts/evaluate_official_benchmarks.py \
   --out_dir projects/tomi/runs/bigtom_grpo
 ```
 
-The harness aligns the released story and trace files and reports exact-match
+The bootstrap extracts the released `tomi_balanced_story_types/` test split
+from the pinned archive. The harness aligns the released story and trace files and reports exact-match
 metrics through the ToMi protocol bridge. Latent transfer diagnostics are in
 `projects/bigtom/scripts/analyse_tomi_latents.py`; the E1 belief minimal-pair
 study is under `projects/bigtom/experiments/e1/`.

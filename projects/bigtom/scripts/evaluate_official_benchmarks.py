@@ -104,7 +104,8 @@ def _ensure_dataset_path(paths: BenchmarkPaths):
     if not validation["split_exists"]:
         raise FileNotFoundError(
             f"{paths.dataset} split file not found. "
-            f"root={paths.root} split_path={paths.split_path}"
+            f"root={paths.root} split_path={paths.split_path}. "
+            f"Run ./tools/bootstrap_third_party.sh {paths.dataset} to fetch it."
         )
 
 

@@ -20,12 +20,19 @@ declare -A REVISIONS=(
 
 ALL_SOURCES=(sotopia bigtom fantom tomi)
 
+# FANToM's released data is fetched by its own loader (task/dataset_loader.py);
+# the same archive and SHA-256 are used here so no Python environment is needed.
+FANTOM_DATA_URL="https://storage.googleapis.com/ai2-mosaic-public/projects/fantom/fantom.tar.gz"
+FANTOM_DATA_SHA256="1d08dfa0ea474c7f83b9bc7e3a7b466eab25194043489dd618b4c5223e1253a4"
+
 usage() {
   cat <<'EOF'
 Usage: tools/bootstrap_third_party.sh [all|SOURCE ...]
 
 Sources: sotopia bigtom fantom tomi
-With no arguments, all pinned sources are installed.
+With no arguments, all pinned sources are installed. The ToMi test split is
+extracted from its pinned archive and the FANToM data is downloaded and
+checksum-verified, so both transfer evaluations are ready to run.
 EOF
 }
 
@@ -40,6 +47,55 @@ apply_patch_once() {
     echo "Cannot apply or verify patch ${patch} in ${checkout}." >&2
     exit 1
   fi
+}
+
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | cut -d' ' -f1
+  else
+    shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+extract_tomi_data() {
+  local checkout="$1"
+  local archive="${checkout}/tomi_balanced_story_types.zip"
+  if [[ -f "${checkout}/tomi_balanced_story_types/fb_all_test.txt" ]]; then
+    echo "  data already extracted: tomi_balanced_story_types/"
+    return
+  fi
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q -o "${archive}" -d "${checkout}"
+  else
+    python3 -m zipfile -e "${archive}" "${checkout}"
+  fi
+  echo "  extracted tomi_balanced_story_types/"
+}
+
+fetch_fantom_data() {
+  local checkout="$1"
+  local data_dir="${checkout}/data/fantom"
+  local archive="${checkout}/data/fantom.tar.gz"
+  if [[ -f "${data_dir}/fantom_v1.json" ]]; then
+    echo "  data already present: data/fantom/fantom_v1.json"
+    return
+  fi
+  mkdir -p "${data_dir}"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "${FANTOM_DATA_URL}" -o "${archive}"
+  else
+    wget -q "${FANTOM_DATA_URL}" -O "${archive}"
+  fi
+  if [[ "$(sha256_of "${archive}")" != "${FANTOM_DATA_SHA256}" ]]; then
+    rm -f "${archive}"
+    echo "FANToM data checksum mismatch for ${FANTOM_DATA_URL}." >&2
+    exit 1
+  fi
+  tar -xzf "${archive}" -C "${data_dir}"
+  rm -f "${archive}"
+  # Same marker FANToM's loader writes, so it does not download again.
+  printf '%s\n%s' "$(date '+%Y-%m-%d %H:%M:%S')" "1.0" > "${data_dir}/.built"
+  echo "  fetched data/fantom/fantom_v1.json"
 }
 
 checkout_source() {
@@ -78,6 +134,12 @@ checkout_source() {
     sotopia)
       apply_patch_once "${destination}" "${ROOT}/third_party/patches/sotopia-agents-init.patch"
       cp -R "${ROOT}/third_party/overlays/sotopia/." "${destination}/"
+      ;;
+    tomi)
+      extract_tomi_data "${destination}"
+      ;;
+    fantom)
+      fetch_fantom_data "${destination}"
       ;;
   esac
   echo "Ready: ${name} @ ${revision}"

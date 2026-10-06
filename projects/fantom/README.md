@@ -17,6 +17,9 @@ cp projects/fantom/configs/models.json projects/fantom/configs/models.local.json
 # Edit models.local.json only if your checkpoints use different names.
 ```
 
+The bootstrap also downloads the released FANToM data to
+`third_party/src/fantom/data/fantom/` and verifies its checksum.
+
 The tracked registry expects the checkpoint layout in
 `docs/data-and-checkpoints.md`. Pass the local registry with
 `--config projects/fantom/configs/models.local.json` when customized.
