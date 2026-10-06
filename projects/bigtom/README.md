@@ -17,6 +17,12 @@ conda activate mental-models
 Released benchmark files live under `third_party/src/`. Generated BigToM data,
 checkpoints, and run outputs remain under this project.
 
+Download and link the 9,964-example paper training set with:
+
+```bash
+python tools/download_data.py
+```
+
 ## 1. Generate and annotate scenarios
 
 ```bash
@@ -33,11 +39,14 @@ projects/bigtom/data/bigtom_qwen.csv
 projects/bigtom/data/bigtom_qwen_annotated.jsonl
 ```
 
+These generic names are used for newly generated runs. The released paper data
+is `projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl`.
+
 ## 2. Train the mental/reward model
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward.py \
-  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --base_model Qwen/Qwen2.5-7B-Instruct \
   --out projects/bigtom/checkpoints/stage1_qwen \
   --epochs 3
@@ -50,7 +59,7 @@ latent prefixes for the policy.
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage3_policy_sft.py \
-  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
   --out projects/bigtom/checkpoints/stage3_qwen
 ```
@@ -59,7 +68,7 @@ CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage3_policy_sft.py \
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage4_grpo.py \
-  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
   --stage3_ckpt projects/bigtom/checkpoints/stage3_qwen/epoch_1 \
   --out projects/bigtom/checkpoints/stage4_qwen \

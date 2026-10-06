@@ -30,7 +30,7 @@ Negative response = the gold action of the OTHER branch (false-vs-true belief).
 Usage
 -----
   python stage1_train_mental_reward.py \\
-      --data ../data/bigtom_qwen_annotated.jsonl \\
+      --data ../data/bigtom_qwen_5k_annotated.jsonl \\
       --base_model Qwen/Qwen2.5-7B-Instruct \\
       --out ../checkpoints/stage1 --epochs 3 --batch_size 4
 """
@@ -547,7 +547,7 @@ def compute_loss(model, batch, device,
 # ──────────────────────────────────────────────────────────────────────────────
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", type=str, default="projects/bigtom/data/bigtom_qwen_annotated.jsonl")
+    ap.add_argument("--data", type=str, default="projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl")
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--out", type=str, default="projects/bigtom/checkpoints/stage1")
     ap.add_argument("--epochs", type=int, default=3)

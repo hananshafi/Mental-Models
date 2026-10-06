@@ -6,6 +6,17 @@ models, and evaluating role-playing responses.
 
 ## 1. Prepare data
 
+Download and link the released annotations with:
+
+```bash
+python tools/download_data.py
+```
+
+The release excludes images. Download the image files from the
+[official MMRole dataset](https://huggingface.co/datasets/YanqiDai/MMRole_dataset)
+and place them under `projects/mmrole/images/`. To regenerate the annotations
+as well, use the orchestrator below.
+
 The orchestrator downloads MMRole, restructures examples by turn, annotates
 belief states, validates annotations, and builds training formats.
 

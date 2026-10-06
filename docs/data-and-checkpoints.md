@@ -10,6 +10,23 @@ projects/<project>/runs/         predictions, summaries, figures, and logs
 artifacts/huggingface/           shared Hugging Face cache
 ```
 
+## Released annotations
+
+The paper-ready annotations are published together in
+[`hanangani/Mental-Model-Annotation-Dataset`](https://huggingface.co/datasets/hanangani/Mental-Model-Annotation-Dataset).
+Run `python tools/download_data.py` to download the pinned release and create
+the following local links:
+
+```text
+projects/sotopia/data/sotopia_turn_rewards_v3.jsonl
+projects/sotopia/data/mental_model_persona_dataset.jsonl
+projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl
+projects/mmrole/training_data/
+```
+
+MMRole images are not redistributed in this release and must be downloaded
+from the upstream MMRole dataset into `projects/mmrole/images/`.
+
 ## Canonical checkpoint names
 
 ### SOTOPIA

@@ -272,7 +272,7 @@ def policy_forward_with_prefix(
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=str,
-                    default="projects/bigtom/data/bigtom_qwen_annotated.jsonl")
+                    default="projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl")
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--stage1_ckpt", type=str,
                     default="projects/bigtom/checkpoints/stage1/epoch_2")

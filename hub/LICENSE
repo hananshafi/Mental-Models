@@ -1,0 +1,52 @@
+Mental Model Annotation Dataset: Mixed License Notice
+
+Copyright (c) 2026 Hanan Gani, Lulu Shao, and Manmohan Chandraker.
+
+1. Mental Models annotations
+
+The newly created mental-state, utility, rationale, hard-negative, validation,
+and reward annotations contributed by the authors of "Mental Models for
+Multi-Agent Systems" are licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0):
+
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+Attribution should cite the paper and this dataset repository.
+
+2. SOTOPIA-derived records
+
+SOTOPIA framework content remains subject to the MIT License and its upstream
+copyright notice:
+
+https://github.com/sotopia-lab/sotopia/blob/main/LICENSE
+
+SOTOPIA-pi content remains subject to the Apache License 2.0 and its upstream
+notices:
+
+https://github.com/sotopia-lab/sotopia-pi/blob/main/LICENSE
+
+3. BigToM-derived records
+
+BigToM source content remains subject to its upstream MIT License and copyright
+notice:
+
+https://github.com/cicl-stanford/procedural-evals-tom/blob/main/LICENSE
+
+4. MMRole-derived records
+
+MMRole source content remains subject to the license and notices published by
+the upstream authors:
+
+https://huggingface.co/datasets/YanqiDai/MMRole_dataset
+https://github.com/YanqiDai/MMRole
+
+5. Media and third-party rights
+
+This repository does not redistribute MMRole or MS-COCO image files. No
+additional rights are granted for third-party names, characters, trademarks,
+dialogue, images, or other upstream content. Users must comply with the
+applicable upstream licenses and terms for separately downloaded media.
+
+Where this notice and an upstream license apply to the same record, the
+upstream license continues to govern the upstream material, while CC BY 4.0
+applies only to the authors' newly contributed annotation layer.

@@ -20,9 +20,16 @@ install the local overlay before running this project:
 pip install -e third_party/src/sotopia
 ```
 
-## 1. Generate annotated episodes
+## 1. Obtain annotated episodes
 
-This step downloads SOTOPIA-π episodes and obtains per-turn reward, rationale,
+Use the validated paper release:
+
+```bash
+python tools/download_data.py
+```
+
+To regenerate the annotations instead, run the pipeline below. This step
+downloads SOTOPIA-π episodes and obtains per-turn reward, rationale,
 hard-negative, first-order, and second-order annotations.
 
 ```bash

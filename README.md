@@ -139,7 +139,21 @@ Fetch only selected sources when desired:
 ./tools/bootstrap_third_party.sh sotopia bigtom tomi fantom
 ```
 
-### 3. Optional: add API keys and choose model storage
+### 3. Download the released annotations
+
+Download the paper-ready SOTOPIA, BigToM, and MMRole annotations from the
+[Mental Model Annotation Dataset](https://huggingface.co/datasets/hanangani/Mental-Model-Annotation-Dataset)
+and link them into the paths used by the training scripts:
+
+```bash
+python tools/download_data.py
+```
+
+The release intentionally excludes MMRole images. Follow the
+[MMRole guide](projects/mmrole/README.md) to obtain those images from the
+upstream dataset. Skip this step when regenerating every annotation locally.
+
+### 4. Optional: add API keys and choose model storage
 
 Skip this step if you only want to inspect the code or run source-level
 validation. API keys are needed only for scripts that call an external service:
@@ -170,7 +184,7 @@ You may change `HF_HOME`, `TRANSFORMERS_CACHE`, and `HF_DATASETS_CACHE` in
 `.env` to use a larger disk. The `.env` file, caches, generated annotations,
 and model weights are local artifacts and must never be committed.
 
-### 4. Check the installation
+### 5. Check the installation
 
 ```bash
 python tools/doctor.py
@@ -234,18 +248,18 @@ export OPENAI_API_KEY=...
 bash projects/bigtom/scripts/run_generate_and_annotate.sh
 
 CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward.py \
-  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --base_model Qwen/Qwen2.5-7B-Instruct \
   --out projects/bigtom/checkpoints/stage1_qwen \
   --epochs 3
 
 CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage3_policy_sft.py \
-  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
   --out projects/bigtom/checkpoints/stage3_qwen
 
 CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage4_grpo.py \
-  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
   --stage3_ckpt projects/bigtom/checkpoints/stage3_qwen/epoch_1 \
   --out projects/bigtom/checkpoints/stage4_qwen \
