@@ -1,63 +1,61 @@
-<div align="center">
+<h1 align="center">Mental Models for Multi-Agent Systems</h1>
+<h3 align="center"><b>NeurIPS 2026</b></h3>
 
-<h1>Mental Models for Multi-Agent Systems</h1>
-
-<p>
+<p align="center">
   <strong>Hanan Gani</strong> &nbsp;&middot;&nbsp;
   <strong>Lulu Shao</strong> &nbsp;&middot;&nbsp;
   <strong>Manmohan Chandraker</strong>
   <br>
   University of California, San Diego
-  <br>
-  <strong>NeurIPS 2026</strong>
 </p>
 
-<p>
-  <a href="https://example.com/mental-models">🌐 Project Page</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://example.com/mental-models-paper.pdf">📄 Paper</a>
-  &nbsp;&middot;&nbsp;
-  <a href="https://arxiv.org/abs/0000.00000">📚 arXiv</a>
+<p align="center">
+  <a href="https://example.com/mental-models"><img src="https://img.shields.io/badge/🌐_Project_Page-00C853?style=for-the-badge" alt="Project Page"></a>
+  <a href="https://example.com/mental-models-paper.pdf"><img src="https://img.shields.io/badge/📄_Paper-B31B1B?style=for-the-badge" alt="Paper"></a>
+  <a href="https://arxiv.org/abs/0000.00000"><img src="https://img.shields.io/badge/📚_arXiv-8A2BE2?style=for-the-badge" alt="arXiv"></a>
 </p>
 
-<p>
-  <img alt="NeurIPS 2026" src="https://img.shields.io/badge/NeurIPS-2026-8A2BE2">
-</p>
+## Introduction
 
-</div>
+Multi-agent systems must reason about more than the words in a conversation.
+An effective agent should infer what another agent believes, what they intend,
+and what they expect others to know before choosing its next action.
 
-This repository contains the official research code for learning explicit,
-recursive mental representations of other agents and using those
-representations to train stronger language and multimodal policies.
+We learn explicit, recursive mental representations from interaction history,
+couple them to reward prediction, and use the resulting signal to train language
+and multimodal policies. The trained policy acts independently at deployment:
+it does not require a teacher model, reward model, or additional inference pass.
 
-## 🧠 A motivating interaction
+## Mental models for interaction
 
-> **Illustrative SOTOPIA-style setting.** Casey is arranging a surprise party
-> for Jordan. Jordan is present and believes Saturday's gathering is an
-> ordinary dinner. Casey asks Morgan, “Is the package ready for Saturday?”
+Our framework gives an agent three connected capabilities:
 
-| Agent | Response | Behavior |
-|---|---|---|
-| 🤖 **Without a mental model** | “Yes—the birthday cake and surprise decorations are ready!” | Answers the literal request but leaks Casey's private goal. |
-| 🧠 **With a mental model** | “Yes, the package is ready. I will bring it after Jordan leaves.” | Tracks Jordan's belief, Casey's intent, and the secrecy constraint. |
+- **Infer:** estimate a partner's beliefs, intent, and task-relevant thoughts;
+- **Recurse:** represent what the partner believes about the acting agent;
+- **Act:** use this latent state to prefer decisions that better satisfy shared,
+  private, and social constraints.
 
-The key distinction is not better phrasing alone. The second agent acts through
-a compact representation of **what the partner believes**, **what the partner
-wants**, and **what the partner expects the agent to know**. Our method learns
-this decision-relevant state during training and distills it into the policy, so
-deployment requires no extra teacher model, reward model, or inference pass.
+### Example: protecting a partner's private goal
 
-```mermaid
-flowchart LR
-    H["💬 Interaction history"] --- M["🧠 Recursive mental model"]
-    M --- B["💭 Belief"]
-    M --- I["🎯 Intent"]
-    M --- T["🗨️ Thought"]
-    B --- R["⚖️ Mental-aware reward"]
-    I --- R
-    T --- R
-    R --- P["🤖 Trained policy"]
-```
+> **Scenario.** In this illustrative SOTOPIA-style interaction, Casey is
+> arranging a surprise party for Jordan. Jordan believes Saturday's gathering
+> is an ordinary dinner. With Jordan present, Casey asks Morgan: “Is the package
+> ready for Saturday?”
+
+**🤖 Agent without mental-model training**
+
+> “Yes—the birthday cake and surprise decorations are ready!”
+
+The response answers the literal question but exposes Casey's private goal.
+
+**🧠 Agent trained with our mental-model signal**
+
+> “Yes, the package is ready. I will bring it after Jordan leaves.”
+
+The response remains useful while respecting Casey's intent, Jordan's current
+belief, and the secrecy constraint. This is the behavior our training objective
+is designed to encourage; the mental representation itself is used during
+training and is distilled into the deployed policy.
 
 ## Paper benchmarks
 
