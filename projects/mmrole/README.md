@@ -15,10 +15,21 @@ python tools/download_data.py
 The model-training stages below use these released annotations and do not
 require an OpenAI API key.
 
-The release excludes images. Download the image files from the
+The release excludes images. MMRole examples reference two image sources: the
+character images from the
 [official MMRole dataset](https://huggingface.co/datasets/YanqiDai/MMRole_dataset)
-and place them under `projects/mmrole/images/`. To regenerate the annotations
-as well, use the orchestrator below.
+and COCO train2017 images. Fetch every referenced image (about 260 MB) with:
+
+```bash
+python tools/download_mmrole_images.py
+```
+
+Images are stored as `projects/mmrole/images/<Collection>/<file>` and
+`projects/mmrole/images/coco/<file>`. The script is resumable, accepts
+`--coco-dir /path/to/coco/train2017` to copy from an existing COCO download,
+and exits with an error unless every annotated example resolves to an image.
+
+To regenerate the annotations as well, use the orchestrator below.
 
 ### Optional: regenerate annotations
 

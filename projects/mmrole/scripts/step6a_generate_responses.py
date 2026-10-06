@@ -13,7 +13,7 @@ Supported models:
 Usage:
     python step6a_generate_responses.py \
         --model qwen-vl-chat \
-        --test_path projects/mmrole/mmrole_official_test_annotated_clean.jsonl \
+        --test_path projects/mmrole/training_data/official_test/raw_annotated.jsonl \
         --output_path projects/mmrole/eval_responses_qwen_vl_chat.jsonl
 
     # Run all 3 baselines
@@ -555,7 +555,7 @@ def main():
                         choices=list(MODEL_REGISTRY.keys()) + ["all"],
                         help="Model to run (or 'all' for all baselines)")
     parser.add_argument("--test_path", type=str,
-                        default="projects/mmrole/mmrole_official_test_annotated_clean.jsonl")
+                        default="projects/mmrole/training_data/official_test/raw_annotated.jsonl")
     parser.add_argument("--output_dir", type=str,
                         default="projects/mmrole/eval_responses")
     parser.add_argument("--image_dir", type=str,

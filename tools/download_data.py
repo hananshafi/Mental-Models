@@ -90,8 +90,8 @@ def main() -> None:
         print(f"Linked {destination_relative} -> {source_relative}")
 
     print(
-        "MMRole images are not included. Download them from "
-        "YanqiDai/MMRole_dataset before running MMRole training."
+        "MMRole images are not included. Run "
+        "python tools/download_mmrole_images.py before MMRole training or evaluation."
     )
 
 

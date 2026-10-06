@@ -806,7 +806,7 @@ def main():
     resp_parser.add_argument("--responses_path", type=str, required=True,
         help="JSONL with model responses (needs example_id/id + response/generated/output)")
     resp_parser.add_argument("--annotations_path", type=str,
-        default="projects/mmrole/mmrole_official_test_annotated_clean.jsonl")
+        default="projects/mmrole/training_data/official_test/raw_annotated.jsonl")
     resp_parser.add_argument("--output_path", type=str,
         default="projects/mmrole/eval_tom_response.jsonl")
     resp_parser.add_argument("--image_dir", type=str,
@@ -825,7 +825,7 @@ def main():
     probe_parser.add_argument("--model_name", type=str, required=True,
         help="Model to test (e.g. gpt-5.4-mini, or local model endpoint)")
     probe_parser.add_argument("--annotations_path", type=str,
-        default="projects/mmrole/mmrole_official_test_annotated_clean.jsonl")
+        default="projects/mmrole/training_data/official_test/raw_annotated.jsonl")
     probe_parser.add_argument("--output_path", type=str,
         default="projects/mmrole/eval_tom_probes.jsonl")
     probe_parser.add_argument("--image_dir", type=str,
