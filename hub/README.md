@@ -114,11 +114,7 @@ configs:
 ## Dataset for *Mental Models for Multi-Agent Systems*
 
 This is the official annotation release accompanying the NeurIPS 2026 paper
-***Mental Models for Multi-Agent Systems*** by [Hanan
-Gani](https://hananshafi.github.io/), [Lulu
-Shao](https://www.linkedin.com/in/lulu-shao-89a477210), and [Manmohan
-Chandraker](https://cseweb.ucsd.edu/~mkchandraker/) at the University of
-California, San Diego.
+***Mental Models for Multi-Agent Systems***.
 
 **Paper resources:** [Project page](https://hananshafi.github.io/Mental-Models/)
 | [Code](https://github.com/hananshafi/Mental-Models) | Paper and arXiv links
