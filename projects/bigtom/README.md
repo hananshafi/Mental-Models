@@ -7,24 +7,12 @@ The training pipeline has three sequential stages: Stage 1 trains the mental/rew
 model, Stage 2 performs latent-prefix SFT, and Stage 3 performs GRPO. Evaluation
 is a separate, unnumbered step.
 
-## Setup
-
-```bash
-./tools/bootstrap_third_party.sh bigtom tomi fantom
-conda activate mental-models
-```
-
-Released benchmark files live under `third_party/src/`. Generated BigToM data,
-checkpoints, and run outputs remain under this project.
-
-Download and link the 9,964-example paper training set with:
-
-```bash
-python tools/download_data.py
-```
-
-Stages 1, 2, and 3 train entirely from this released JSONL and do not require
-an OpenAI API key. Official multiple-choice evaluation is also local.
+Complete the [installation](../../README.md#installation) first. It fetches
+the pinned BigToM, ToMi, and FANToM benchmark files under `third_party/src/` and
+downloads the 9,964-example paper training set to
+`projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl`. Stages 1, 2, and 3 train
+entirely from this file and do not require an OpenAI API key. Official
+multiple-choice evaluation is also local.
 
 ## Optional: Generate and annotate new scenarios
 

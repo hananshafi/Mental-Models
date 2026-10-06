@@ -205,132 +205,28 @@ and model weights are local artifacts and must never be committed.
 
 ```bash
 python tools/doctor.py
-python tools/validate_repository.py
 ```
 
 Use `python tools/doctor.py --strict` after installing the complete environment
-and downloading every pinned upstream source.
+and downloading every pinned upstream source. Repository checks are listed under
+[Validation](#validation).
 
-## Training quickstart
+## Training
 
-This repository includes the complete training pipelines, not only evaluation
-code. The dataset-specific guides document data generation, checkpoint
-selection, resuming, and evaluation:
+Each pipeline has a single training guide with its complete, ordered commands,
+checkpoint names, and evaluation:
 
-- [SOTOPIA training guide](projects/sotopia/README.md): coupled mental/reward
-  learning followed by SFT warm-up and mental-reward-guided GRPO.
-- [BigToM training guide](projects/bigtom/README.md): mental/reward learning,
-  latent-prefix SFT, and GRPO.
-- [MMRole training guide](projects/mmrole/README.md): visual mental/reward
-  learning, multimodal SFT, and learned-reward GRPO.
+- [SOTOPIA](projects/sotopia/README.md): coupled mental/reward model, then SFT
+  warm-up and mental-reward-guided GRPO.
+- [BigToM](projects/bigtom/README.md): mental/reward model, latent-prefix SFT,
+  then GRPO.
+- [MMRole](projects/mmrole/README.md): visual mental/reward model, multimodal
+  SFT, then learned-reward GRPO with an optional DPO stage.
 
-All three training pipelines use the released annotations hosted in the
-[Mental Model Annotation Dataset on Hugging Face](https://huggingface.co/datasets/hanangani/Mental-Model-Annotation-Dataset).
-Download the pinned release and link each dataset into its expected training
-path with:
-
-```bash
-python tools/download_data.py
-```
-
-The Hugging Face release includes SOTOPIA, BigToM, and MMRole annotations. It
-does not redistribute MMRole images; fetch them with
-`python tools/download_mmrole_images.py` as described in the
-[MMRole guide](projects/mmrole/README.md).
-
-Run the following commands from the repository root after completing the
-installation steps above.
-
-### Train SOTOPIA from the released annotations
-
-Stage 1 and Stage 2 run locally and do not require an OpenAI API key. First run
-`python tools/download_data.py` as described above, then train with:
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python \
-  projects/sotopia/scripts/stage1_train_coupled_mental_reward_v3.py \
-  --model_name Qwen/Qwen2.5-7B-Instruct \
-  --data_path projects/sotopia/data/sotopia_turn_rewards_v3.jsonl \
-  --output_dir projects/sotopia/checkpoints/coupled_mental_reward_qwen_v3 \
-  --gpu 0
-
-CUDA_VISIBLE_DEVICES=0,1 python \
-  projects/sotopia/scripts/stage2_grpo_agent_training_v3.py \
-  --policy_model_name Qwen/Qwen2.5-7B-Instruct \
-  --reward_model_name Qwen/Qwen2.5-7B-Instruct \
-  --reward_checkpoint_dir projects/sotopia/checkpoints/coupled_mental_reward_qwen_v3/best \
-  --data_path projects/sotopia/data/sotopia_turn_rewards_v3.jsonl \
-  --output_dir projects/sotopia/checkpoints/grpo_agent_qwen_v3 \
-  --preset qwen \
-  --gpu 0,1
-```
-
-An `OPENAI_API_KEY` is needed only to regenerate the GPT-4o annotations or to
-run evaluation with GPT-4o-mini as the partner and GPT-4o as the judge. Stage 2
-performs its SFT warm-up before GRPO. See the
-[SOTOPIA guide](projects/sotopia/README.md) for checkpoint reuse, evaluation,
-and supervision-fraction ablations.
-
-### Train BigToM from the released annotations
-
-The BigToM training stages run locally and do not require an OpenAI API key.
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward.py \
-  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
-  --base_model Qwen/Qwen2.5-7B-Instruct \
-  --out projects/bigtom/checkpoints/stage1_qwen \
-  --epochs 3
-
-CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage2_policy_sft.py \
-  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
-  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
-  --out projects/bigtom/checkpoints/stage2_qwen
-
-CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage3_grpo.py \
-  --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
-  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
-  --stage2_ckpt projects/bigtom/checkpoints/stage2_qwen/epoch_1 \
-  --out projects/bigtom/checkpoints/stage3_qwen \
-  --max_steps 300 \
-  --save_every 100
-```
-
-The pipeline is ordered as Stage 1 mental/reward training, Stage 2 latent-prefix
-SFT, and Stage 3 GRPO. See the
-[BigToM guide](projects/bigtom/README.md) for official BigToM, ToMi, and FANToM
+Run every command from the repository root after completing the installation
+above. Training uses the released annotations and runs locally; an
+`OPENAI_API_KEY` is needed only to regenerate annotations or for LLM-judged
 evaluation.
-
-### Train MMRole from the released annotations
-
-After running `python tools/download_data.py` and
-`python tools/download_mmrole_images.py`, the training stages run locally and
-do not require an OpenAI API key.
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python \
-  projects/mmrole/scripts/stage0_reward_model_visual_tom.py \
-  --base_model Qwen/Qwen2.5-VL-7B-Instruct \
-  --output_dir projects/mmrole/checkpoints/stage0_reward_v3 \
-  --gpu 0
-
-CUDA_VISIBLE_DEVICES=0 python projects/mmrole/scripts/stage1_sft_visual_tom.py \
-  --base_model Qwen/Qwen2.5-VL-7B-Instruct \
-  --mental_prefix_checkpoint_dir projects/mmrole/checkpoints/stage0_reward_v3/best \
-  --output_dir projects/mmrole/checkpoints/stage1_sft \
-  --gpu 0
-
-CUDA_VISIBLE_DEVICES=0,1,2 python \
-  projects/mmrole/scripts/stage2_grpo_learned_reward.py \
-  --sft_checkpoint projects/mmrole/checkpoints/stage1_sft/best \
-  --reward_checkpoint_dir projects/mmrole/checkpoints/stage0_reward_v3/best \
-  --mental_prefix_checkpoint_dir projects/mmrole/checkpoints/stage0_reward_v3/best \
-  --output_dir projects/mmrole/checkpoints/stage2_grpo \
-  --gpu 0,1,2
-```
-
-See the [MMRole guide](projects/mmrole/README.md) for the plain-SFT control,
-LLaVA-NeXT/Mistral variant, optional DPO stage, and official evaluation.
 
 Generated artifacts follow one convention:
 

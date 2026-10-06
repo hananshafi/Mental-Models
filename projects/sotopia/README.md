@@ -4,6 +4,11 @@ Canonical language-agent pipeline for jointly learning recursive mental states
 and a reward model, then distilling that signal into a standalone policy with
 SFT and GRPO.
 
+Complete the [installation](../../README.md#installation) first. It installs
+the pinned SOTOPIA checkout with the local overlay and downloads the released
+annotations to `projects/sotopia/data/`. Stage 1 and Stage 2 train entirely from
+these annotations and do not require an OpenAI API key.
+
 ## Layout
 
 - `scripts/`: current data generation, Stage 1, Stage 2, Stage 3, and latent analysis.
@@ -12,28 +17,11 @@ SFT and GRPO.
 - `legacy/`: older v2 implementations retained for provenance.
 - `docs/detailed_pipeline.md`: implementation-level notes from the original workspace.
 
-The SOTOPIA checkout is pinned under `third_party/src/sotopia`. Bootstrap it and
-install the local overlay before running this project:
+## 1. Optional: regenerate annotated episodes
 
-```bash
-./tools/bootstrap_third_party.sh sotopia
-pip install -e third_party/src/sotopia
-```
-
-## 1. Obtain annotated episodes
-
-Use the validated paper release:
-
-```bash
-python tools/download_data.py
-```
-
-Stages 1 and 2 train entirely from this released JSONL and do not require an
-OpenAI API key.
-
-To regenerate the annotations instead, run the pipeline below. This step
-downloads SOTOPIA-π episodes and obtains per-turn reward, rationale,
-hard-negative, first-order, and second-order annotations.
+Skip this step when using the released annotations. To regenerate them, run the
+pipeline below. It downloads SOTOPIA-π episodes and obtains per-turn reward,
+rationale, hard-negative, first-order, and second-order annotations.
 
 ```bash
 export OPENAI_API_KEY=...

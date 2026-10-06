@@ -11,14 +11,8 @@ pipeline in the paper:
 
 It standardizes on Python 3.10, PyTorch 2.5.1, Transformers 4.53.3, PEFT
 0.18.1, and CUDA 12.1. This reconciles the language and vision-language
-pipelines while retaining the APIs used by Qwen2.5 and Qwen2.5-VL.
-
-```bash
-conda env create -f environment.yml
-conda activate mental-models
-./tools/bootstrap_third_party.sh
-pip install -e third_party/src/sotopia
-```
+pipelines while retaining the APIs used by Qwen2.5 and Qwen2.5-VL. Create it
+with the [installation steps](../README.md#installation) in the main README.
 
 For CPU-only source inspection, create a Python 3.10 environment, install the
 CPU PyTorch wheel, and then install each file under `requirements/`. Training
