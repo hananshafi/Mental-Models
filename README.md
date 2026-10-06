@@ -240,12 +240,11 @@ performs its SFT warm-up before GRPO. See the
 [SOTOPIA guide](projects/sotopia/README.md) for checkpoint reuse, evaluation,
 and supervision-fraction ablations.
 
-### Train BigToM
+### Train BigToM from the released annotations
+
+The BigToM training stages run locally and do not require an OpenAI API key.
 
 ```bash
-export OPENAI_API_KEY=...
-bash projects/bigtom/scripts/run_generate_and_annotate.sh
-
 CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward.py \
   --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --base_model Qwen/Qwen2.5-7B-Instruct \
@@ -271,14 +270,12 @@ The historical numbering is intentional: this implementation has Stages 1,
 [BigToM guide](projects/bigtom/README.md) for official BigToM, ToMi, and FANToM
 evaluation.
 
-### Train MMRole
+### Train MMRole from the released annotations
+
+After downloading the released annotations and obtaining the MMRole images,
+the training stages run locally and do not require an OpenAI API key.
 
 ```bash
-export OPENAI_API_KEY=...
-bash projects/mmrole/scripts/run_pipeline.sh --pilot
-# After checking the pilot output:
-bash projects/mmrole/scripts/run_pipeline.sh
-
 CUDA_VISIBLE_DEVICES=0 python \
   projects/mmrole/scripts/stage0_reward_model_visual_tom.py \
   --base_model Qwen/Qwen2.5-VL-7B-Instruct \

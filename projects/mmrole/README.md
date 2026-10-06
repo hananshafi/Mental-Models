@@ -12,10 +12,15 @@ Download and link the released annotations with:
 python tools/download_data.py
 ```
 
+The model-training stages below use these released annotations and do not
+require an OpenAI API key.
+
 The release excludes images. Download the image files from the
 [official MMRole dataset](https://huggingface.co/datasets/YanqiDai/MMRole_dataset)
 and place them under `projects/mmrole/images/`. To regenerate the annotations
 as well, use the orchestrator below.
+
+### Optional: regenerate annotations
 
 The orchestrator downloads MMRole, restructures examples by turn, annotates
 belief states, validates annotations, and builds training formats.

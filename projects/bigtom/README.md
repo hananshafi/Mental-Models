@@ -23,7 +23,13 @@ Download and link the 9,964-example paper training set with:
 python tools/download_data.py
 ```
 
-## 1. Generate and annotate scenarios
+Stages 1, 3, and 4 train entirely from this released JSONL and do not require
+an OpenAI API key. Official multiple-choice evaluation is also local.
+
+## 1. Optional: Generate and annotate new scenarios
+
+Skip this section when using the released paper training set. An OpenAI API key
+is required only when generating a new teacher-annotated dataset.
 
 ```bash
 export OPENAI_API_KEY=...
