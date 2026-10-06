@@ -1,120 +1,154 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="740" viewBox="0 0 1400 740" role="img" aria-labelledby="title description">
   <title id="title">Mental-model training changes how an agent handles private information</title>
-  <desc id="description">A comparison of two agents answering the same question. The text-only agent reveals a surprise party, while the mental-model-trained agent tracks belief, intent, and recursive state to protect the secret.</desc>
+  <desc id="description">A three-column comparison showing a shared private-information conversation, the agent representation with and without a mental model, and the resulting responses.</desc>
   <defs>
     <style>
-      .title { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 32px; font-weight: 700; fill: #111111; }
-      .subtitle { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 16px; font-weight: 400; fill: #4A4A4A; }
-      .section { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 21px; font-weight: 700; fill: #171717; }
-      .label { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #242424; letter-spacing: 0.25px; }
-      .body { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 18px; font-weight: 400; fill: #202020; }
-      .small { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 15px; font-weight: 400; fill: #343434; }
-      .note { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 13.5px; font-weight: 400; fill: #444444; }
-      .marker { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 13px; font-weight: 700; fill: #FFFFFF; }
+      .heading { font-family: Arial, Helvetica, sans-serif; font-size: 25px; font-weight: 700; fill: #111111; }
+      .section { font-family: Arial, Helvetica, sans-serif; font-size: 19px; font-weight: 700; fill: #171717; }
+      .label { font-family: Arial, Helvetica, sans-serif; font-size: 13px; font-weight: 700; fill: #242424; }
+      .body { font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 400; fill: #202020; }
+      .small { font-family: Arial, Helvetica, sans-serif; font-size: 14px; font-weight: 400; fill: #353535; }
+      .note { font-family: Arial, Helvetica, sans-serif; font-size: 12.5px; font-weight: 400; fill: #505050; }
+      .white { fill: #FFFFFF; }
     </style>
   </defs>
 
   <rect width="1400" height="740" fill="#FFFFFF"/>
 
-  <text x="70" y="50" class="title">Same conversation. Different model of the people in it.</text>
-  <text x="70" y="78" class="subtitle">An illustrative SOTOPIA-style private-information interaction</text>
-  <line x1="70" y1="98" x2="1330" y2="98" stroke="#9D9D9D" stroke-width="1.5" stroke-dasharray="5 6"/>
+  <text x="28" y="43" class="heading">Conversation context</text>
+  <text x="458" y="43" class="heading">Agent representation</text>
+  <text x="992" y="43" class="heading">Response</text>
 
-  <rect x="70" y="116" width="1260" height="118" rx="10" fill="#F7F7F4" stroke="#CFCFC9" stroke-width="1.5"/>
-  <text x="94" y="140" class="label">SHARED CONTEXT</text>
+  <line x1="430" y1="18" x2="430" y2="710" stroke="#777777" stroke-width="1.4" stroke-dasharray="5 6"/>
+  <line x1="970" y1="18" x2="970" y2="710" stroke="#777777" stroke-width="1.4" stroke-dasharray="5 6"/>
 
-  <circle cx="132" cy="176" r="30" fill="#716A9E"/>
-  <circle cx="132" cy="168" r="9.5" fill="#FFFFFF"/>
-  <path d="M115 193 C119 178 145 178 149 193" fill="#FFFFFF"/>
-  <text x="132" y="220" text-anchor="middle" class="note">Casey</text>
+  <rect x="28" y="72" width="374" height="374" fill="#F2F1ED"/>
+  <text x="48" y="96" class="label">SATURDAY DINNER · SHARED ROOM</text>
 
-  <rect x="184" y="147" width="672" height="60" rx="8" fill="#EAE8F2" stroke="#B9B5CD" stroke-width="1.5"/>
-  <path d="M184 178 L168 188 L186 187" fill="#EAE8F2" stroke="#B9B5CD" stroke-width="1.5" stroke-linejoin="round"/>
-  <text x="212" y="183" class="body">“Is the package ready for Saturday?”</text>
+  <circle cx="80" cy="143" r="28" fill="#746A9F"/>
+  <circle cx="80" cy="136" r="8.5" class="white"/>
+  <path d="M65 159 C69 146 91 146 95 159" class="white"/>
+  <text x="80" y="181" text-anchor="middle" class="note">Casey</text>
 
-  <rect x="914" y="143" width="382" height="68" rx="8" fill="#F5ECD7"/>
-  <circle cx="946" cy="177" r="18" fill="#C79B43"/>
-  <circle cx="946" cy="171" r="5.5" fill="#FFFFFF"/>
-  <path d="M936 186 C939 178 953 178 956 186" fill="#FFFFFF"/>
-  <text x="976" y="170" class="label">Jordan is listening</text>
-  <text x="976" y="193" class="small">Believes it is a normal dinner</text>
+  <rect x="119" y="108" width="249" height="66" rx="5" fill="#E7E4EF" stroke="#B9B3CA" stroke-width="1.3"/>
+  <path d="M119 141 L104 151 L121 150" fill="#E7E4EF" stroke="#B9B3CA" stroke-width="1.3" stroke-linejoin="round"/>
+  <text x="139" y="136" class="body">“Is the package ready</text>
+  <text x="139" y="158" class="body">for Saturday?”</text>
 
-  <rect x="70" y="270" width="605" height="398" rx="8" fill="#FBF6F4"/>
-  <rect x="725" y="270" width="605" height="398" rx="8" fill="#F3F8F4"/>
-  <line x1="700" y1="270" x2="700" y2="668" stroke="#8F8F8F" stroke-width="1.5" stroke-dasharray="5 6"/>
+  <ellipse cx="225" cy="302" rx="92" ry="57" fill="#D8CCB9" stroke="#B9AD9A" stroke-width="1.2"/>
+  <ellipse cx="225" cy="297" rx="74" ry="42" fill="#E6DCCC"/>
+  <rect x="208" y="276" width="34" height="32" rx="2" fill="#B56B55"/>
+  <rect x="223" y="276" width="5" height="32" fill="#EAD9B4"/>
+  <rect x="208" y="288" width="34" height="5" fill="#EAD9B4"/>
+  <path d="M225 276 C215 265 212 274 225 281 C238 274 235 265 225 276" fill="none" stroke="#EAD9B4" stroke-width="3" stroke-linecap="round"/>
+  <text x="225" y="329" text-anchor="middle" class="note">package</text>
 
-  <circle cx="104" cy="310" r="14" fill="#BE6658"/>
-  <text x="104" y="315" text-anchor="middle" class="marker">A</text>
-  <text x="130" y="317" class="section">Without mental-model training</text>
+  <circle cx="334" cy="257" r="27" fill="#C89A42"/>
+  <circle cx="334" cy="250" r="8" class="white"/>
+  <path d="M320 273 C324 261 344 261 348 273" class="white"/>
+  <text x="334" y="294" text-anchor="middle" class="note">Jordan</text>
+  <path d="M365 246 C375 252 375 262 365 268 M371 240 C387 250 387 264 371 274" fill="none" stroke="#96702D" stroke-width="2" stroke-linecap="round"/>
 
-  <rect x="100" y="345" width="545" height="142" rx="7" fill="#FFFFFF" stroke="#C8C3C1" stroke-width="1.5"/>
-  <circle cx="140" cy="405" r="24" fill="#858585"/>
-  <circle cx="140" cy="398" r="7.5" fill="#FFFFFF"/>
-  <path d="M127 418 C131 408 149 408 153 418" fill="#FFFFFF"/>
-  <text x="180" y="377" class="label">MODEL RESPONSE</text>
-  <text x="180" y="412" class="body">
-    <tspan x="180" dy="0">“Yes—the birthday cake and surprise</tspan>
-    <tspan x="180" dy="28">decorations are ready!”</tspan>
-  </text>
+  <circle cx="91" cy="341" r="27" fill="#6D7376"/>
+  <circle cx="91" cy="334" r="8" class="white"/>
+  <path d="M77 357 C81 345 101 345 105 357" class="white"/>
+  <text x="91" y="378" text-anchor="middle" class="note">Morgan</text>
 
-  <rect x="100" y="513" width="545" height="115" rx="6" fill="#F3DFDA"/>
-  <rect x="100" y="513" width="7" height="115" rx="3.5" fill="#BE6658"/>
-  <g transform="translate(128 535)">
-    <path d="M4 17 V11 C4 2 19 2 19 11 V17" fill="none" stroke="#8E4439" stroke-width="2.4" stroke-linecap="round"/>
-    <rect x="0" y="16" width="24" height="21" rx="4" fill="#BE6658"/>
-    <path d="M12 22 V30" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+  <text x="28" y="481" class="section">Interaction state</text>
+  <rect x="28" y="501" width="12" height="12" fill="#746A9F"/>
+  <text x="52" y="512" class="small">Casey wants to preserve the surprise.</text>
+  <circle cx="34" cy="544" r="6" fill="#C89A42"/>
+  <text x="52" y="549" class="small">Jordan expects an ordinary dinner.</text>
+  <rect x="28" y="573" width="12" height="9" rx="2" fill="#6D7376"/>
+  <path d="M31 582 L29 588 L36 582" fill="#6D7376"/>
+  <text x="52" y="583" class="small">Morgan hears Casey’s question.</text>
+  <line x1="28" y1="612" x2="402" y2="612" stroke="#B3B3B3" stroke-width="1.2" stroke-dasharray="4 5"/>
+  <text x="28" y="638" class="note">The observed dialogue is identical in both conditions.</text>
+  <text x="28" y="660" class="note">Only the training signal differs.</text>
+
+  <circle cx="474" cy="88" r="14" fill="#BB6253"/>
+  <text x="474" y="93" text-anchor="middle" class="label white">1</text>
+  <text x="500" y="95" class="section">Without mental model</text>
+
+  <rect x="458" y="122" width="452" height="54" fill="#EFEFED"/>
+  <rect x="458" y="122" width="104" height="54" fill="#D8D8D4"/>
+  <text x="474" y="145" class="label">Surface cue</text>
+  <text x="474" y="163" class="note">utterance</text>
+  <text x="582" y="154" class="body">package, ready</text>
+
+  <rect x="458" y="191" width="452" height="54" fill="#F7F7F5" stroke="#A9A9A5" stroke-width="1.2" stroke-dasharray="5 5"/>
+  <text x="474" y="213" class="label">Partner state</text>
+  <text x="474" y="231" class="note">belief / intent</text>
+  <text x="618" y="223" class="small">not explicitly represented</text>
+
+  <rect x="458" y="260" width="452" height="54" fill="#F1DFDA"/>
+  <rect x="458" y="260" width="104" height="54" fill="#DDA79D"/>
+  <text x="474" y="283" class="label">Decision cue</text>
+  <text x="474" y="301" class="note">surface fit</text>
+  <text x="582" y="292" class="body">answer the literal question</text>
+
+  <text x="458" y="340" class="note">The response is conditioned on the dialogue alone.</text>
+
+  <line x1="458" y1="370" x2="1372" y2="370" stroke="#777777" stroke-width="1.4" stroke-dasharray="5 6"/>
+
+  <circle cx="474" cy="402" r="14" fill="#5D876D"/>
+  <text x="474" y="407" text-anchor="middle" class="label white">2</text>
+  <text x="500" y="409" class="section">Mental-model trained</text>
+
+  <rect x="458" y="436" width="452" height="58" fill="#EBE7F1"/>
+  <rect x="458" y="436" width="104" height="58" fill="#C9C2DA"/>
+  <text x="474" y="462" class="label">Belief</text>
+  <text x="474" y="480" class="note">what is known</text>
+  <text x="582" y="470" class="body">Jordan does not know the surprise</text>
+
+  <rect x="458" y="508" width="452" height="58" fill="#F3E9D6"/>
+  <rect x="458" y="508" width="104" height="58" fill="#DFC492"/>
+  <text x="474" y="534" class="label">Intent</text>
+  <text x="474" y="552" class="note">what is wanted</text>
+  <text x="582" y="542" class="body">Casey wants to preserve secrecy</text>
+
+  <rect x="458" y="580" width="452" height="58" fill="#E1EBF0"/>
+  <rect x="458" y="580" width="104" height="58" fill="#B8CCD5"/>
+  <text x="474" y="606" class="label">Recursive</text>
+  <text x="474" y="624" class="note">who knows what</text>
+  <text x="582" y="614" class="body">model each person’s expectation</text>
+
+  <text x="458" y="670" class="note">Decision-relevant state shapes training, not deployment cost.</text>
+
+  <g transform="translate(1328 71)">
+    <circle cx="18" cy="18" r="18" fill="#D5A748"/>
+    <path d="M18 3 V8 M15 3 H21" stroke="#343A40" stroke-width="1.8" stroke-linecap="round"/>
+    <rect x="8" y="10" width="20" height="16" rx="5" fill="#343A40"/>
+    <circle cx="14" cy="17" r="2" class="white"/>
+    <circle cx="22" cy="17" r="2" class="white"/>
+    <path d="M13 22 H23" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/>
   </g>
-  <text x="174" y="550" class="label">Private goal exposed</text>
-  <text x="174" y="577" class="small">
-    <tspan x="174" dy="0">The response follows the surface text,</tspan>
-    <tspan x="174" dy="22">but ignores who knows what.</tspan>
-  </text>
+  <text x="992" y="91" class="label">LITERAL RESPONSE</text>
+  <rect x="992" y="108" width="380" height="112" fill="#FFFFFF" stroke="#B6B6B2" stroke-width="1.3"/>
+  <text x="1014" y="148" class="body">“Yes—the birthday cake and</text>
+  <text x="1014" y="174" class="body">surprise decorations are ready!”</text>
+  <rect x="992" y="239" width="380" height="67" fill="#F1DFDA"/>
+  <rect x="992" y="239" width="7" height="67" fill="#BB6253"/>
+  <text x="1015" y="265" class="label">Private goal exposed</text>
+  <text x="1015" y="287" class="note">Literal answer; social state ignored.</text>
 
-  <circle cx="759" cy="310" r="14" fill="#5D876F"/>
-  <text x="759" y="315" text-anchor="middle" class="marker">B</text>
-  <text x="785" y="317" class="section">Mental-model trained</text>
+  <g transform="translate(1328 390)">
+    <circle cx="18" cy="18" r="18" fill="#6E9A7D"/>
+    <path d="M18 3 V8 M15 3 H21" stroke="#343A40" stroke-width="1.8" stroke-linecap="round"/>
+    <rect x="8" y="10" width="20" height="16" rx="5" fill="#343A40"/>
+    <circle cx="14" cy="17" r="2" class="white"/>
+    <circle cx="22" cy="17" r="2" class="white"/>
+    <path d="M13 22 H23" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/>
+  </g>
+  <text x="992" y="410" class="label">MENTAL-MODEL RESPONSE</text>
+  <rect x="992" y="427" width="380" height="122" fill="#FFFFFF" stroke="#9DB3A4" stroke-width="1.3"/>
+  <text x="1014" y="467" class="body">“Yes, the package is ready.</text>
+  <text x="1014" y="493" class="body">I’ll bring it after Jordan leaves.”</text>
+  <rect x="992" y="568" width="380" height="67" fill="#DDEADF"/>
+  <rect x="992" y="568" width="7" height="67" fill="#5D876D"/>
+  <text x="1015" y="594" class="label">Private intent preserved</text>
+  <text x="1015" y="616" class="note">Useful without revealing the surprise.</text>
 
-  <rect x="755" y="345" width="165" height="112" rx="7" fill="#E8E5F0" stroke="#BDB7CE" stroke-width="1.2"/>
-  <circle cx="782" cy="374" r="15" fill="#716A9E"/>
-  <text x="782" y="379" text-anchor="middle" class="marker">B</text>
-  <text x="806" y="379" class="label">Belief</text>
-  <text x="772" y="413" class="note">
-    <tspan x="772" dy="0">Jordan does not</tspan>
-    <tspan x="772" dy="19">know the surprise</tspan>
-  </text>
-
-  <rect x="940" y="345" width="165" height="112" rx="7" fill="#F2E7D4" stroke="#CFBE9D" stroke-width="1.2"/>
-  <circle cx="967" cy="374" r="15" fill="#BC8745"/>
-  <text x="967" y="379" text-anchor="middle" class="marker">I</text>
-  <text x="991" y="379" class="label">Intent</text>
-  <text x="957" y="413" class="note">
-    <tspan x="957" dy="0">Casey wants to</tspan>
-    <tspan x="957" dy="19">preserve secrecy</tspan>
-  </text>
-
-  <rect x="1125" y="345" width="175" height="112" rx="7" fill="#DFEAEF" stroke="#AEC1C9" stroke-width="1.2"/>
-  <circle cx="1152" cy="374" r="15" fill="#65879A"/>
-  <text x="1152" y="379" text-anchor="middle" class="marker">R²</text>
-  <text x="1176" y="379" class="label">Recursive</text>
-  <text x="1142" y="413" class="note">
-    <tspan x="1142" dy="0">Models what each</tspan>
-    <tspan x="1142" dy="19">person expects</tspan>
-  </text>
-
-  <rect x="755" y="486" width="545" height="116" rx="7" fill="#FFFFFF" stroke="#9EB3A5" stroke-width="1.5"/>
-  <circle cx="795" cy="544" r="24" fill="#5D876F"/>
-  <circle cx="795" cy="537" r="7.5" fill="#FFFFFF"/>
-  <path d="M782 557 C786 547 804 547 808 557" fill="#FFFFFF"/>
-  <text x="835" y="518" class="label">MODEL RESPONSE</text>
-  <text x="835" y="552" class="body">
-    <tspan x="835" dy="0">“Yes, the package is ready.</tspan>
-    <tspan x="835" dy="28">I’ll bring it after Jordan leaves.”</tspan>
-  </text>
-
-  <rect x="755" y="618" width="545" height="36" rx="6" fill="#DDEADF"/>
-  <circle cx="777" cy="636" r="9" fill="#5D876F"/>
-  <path d="M773 636 L776 639 L782 632" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="796" y="641" class="label">Useful response · private intent preserved</text>
-
-  <text x="70" y="711" class="subtitle">The latent mental state guides training; the deployed policy responds in one pass.</text>
+  <line x1="992" y1="664" x2="1372" y2="664" stroke="#B3B3B3" stroke-width="1.2" stroke-dasharray="4 5"/>
+  <text x="992" y="691" class="note">The deployed policy responds in one pass.</text>
 </svg>
