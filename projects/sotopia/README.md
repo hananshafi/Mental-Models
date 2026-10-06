@@ -28,6 +28,9 @@ Use the validated paper release:
 python tools/download_data.py
 ```
 
+Stages 1 and 2 train entirely from this released JSONL and do not require an
+OpenAI API key.
+
 To regenerate the annotations instead, run the pipeline below. This step
 downloads SOTOPIA-π episodes and obtains per-turn reward, rationale,
 hard-negative, first-order, and second-order annotations.

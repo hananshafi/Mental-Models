@@ -210,15 +210,12 @@ selection, resuming, and evaluation:
 Run the following commands from the repository root after completing the
 installation steps above.
 
-### Train SOTOPIA
+### Train SOTOPIA from the released annotations
+
+Stage 1 and Stage 2 run locally and do not require an OpenAI API key. First run
+`python tools/download_data.py` as described above, then train with:
 
 ```bash
-export OPENAI_API_KEY=...
-python projects/sotopia/scripts/generate_sotopia_full_pipeline.py \
-  --output projects/sotopia/data/sotopia_turn_rewards_v3.jsonl \
-  --model gpt-4o \
-  --limit 1500
-
 CUDA_VISIBLE_DEVICES=0 python \
   projects/sotopia/scripts/stage1_train_coupled_mental_reward_v3.py \
   --model_name Qwen/Qwen2.5-7B-Instruct \
@@ -237,7 +234,9 @@ CUDA_VISIBLE_DEVICES=0,1 python \
   --gpu 0,1
 ```
 
-Stage 2 performs its SFT warm-up before GRPO. See the
+An `OPENAI_API_KEY` is needed only to regenerate the GPT-4o annotations or to
+run evaluation with GPT-4o-mini as the partner and GPT-4o as the judge. Stage 2
+performs its SFT warm-up before GRPO. See the
 [SOTOPIA guide](projects/sotopia/README.md) for checkpoint reuse, evaluation,
 and supervision-fraction ablations.
 
