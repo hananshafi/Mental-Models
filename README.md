@@ -17,6 +17,10 @@
   <a href="https://arxiv.org/abs/0000.00000"><img src="assets/tag-arxiv.svg" height="42" alt="arXiv"></a>
 </p>
 
+<p align="center">
+  <a href="https://huggingface.co/datasets/hanangani/Mental-Model-Annotation-Dataset"><strong>🤗 Training Dataset on Hugging Face</strong></a>
+</p>
+
 ## Introduction
 
 Multi-agent systems must reason about more than the words in a conversation.
@@ -206,6 +210,19 @@ selection, resuming, and evaluation:
   latent-prefix SFT, and GRPO.
 - [MMRole training guide](projects/mmrole/README.md): visual mental/reward
   learning, multimodal SFT, and learned-reward GRPO.
+
+All three training pipelines use the released annotations hosted in the
+[Mental Model Annotation Dataset on Hugging Face](https://huggingface.co/datasets/hanangani/Mental-Model-Annotation-Dataset).
+Download the pinned release and link each dataset into its expected training
+path with:
+
+```bash
+python tools/download_data.py
+```
+
+The Hugging Face release includes SOTOPIA, BigToM, and MMRole annotations. It
+does not duplicate MMRole images; obtain those from the upstream MMRole dataset
+as described in the [MMRole guide](projects/mmrole/README.md).
 
 Run the following commands from the repository root after completing the
 installation steps above.
