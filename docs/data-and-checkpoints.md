@@ -24,8 +24,9 @@ projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl
 projects/mmrole/training_data/
 ```
 
-MMRole images are not redistributed in this release and must be downloaded
-from the upstream MMRole dataset into `projects/mmrole/images/`.
+MMRole images are not redistributed in this release. Run
+`python tools/download_mmrole_images.py` to fetch the referenced MMRole
+character images and COCO train2017 images into `projects/mmrole/images/`.
 
 ## Canonical checkpoint names
 
@@ -80,6 +81,10 @@ third_party/src/bigtom
 third_party/src/fantom
 third_party/src/tomi
 ```
+
+The bootstrap also extracts the ToMi test split to
+`third_party/src/tomi/tomi_balanced_story_types/` and downloads the
+checksum-verified FANToM data to `third_party/src/fantom/data/fantom/`.
 
 Do not train on transfer-test labels. FANToM and ToMi are used by the shared
 BigToM evaluator for zero-shot transfer.

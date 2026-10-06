@@ -143,7 +143,10 @@ Fetch only selected sources when desired:
 ./tools/bootstrap_third_party.sh sotopia bigtom tomi fantom
 ```
 
-### 3. Download the released annotations
+The bootstrap also extracts the ToMi test split and downloads the
+checksum-verified FANToM data used for zero-shot transfer evaluation.
+
+### 3. Download the released annotations and images
 
 Download the paper-ready SOTOPIA, BigToM, and MMRole annotations from the
 [Mental Model Annotation Dataset](https://huggingface.co/datasets/hanangani/Mental-Model-Annotation-Dataset)
@@ -153,9 +156,19 @@ and link them into the paths used by the training scripts:
 python tools/download_data.py
 ```
 
-The release intentionally excludes MMRole images. Follow the
-[MMRole guide](projects/mmrole/README.md) to obtain those images from the
-upstream dataset. Skip this step when regenerating every annotation locally.
+Skip this download when regenerating every annotation locally.
+
+The release does not redistribute images. MMRole training and evaluation need
+the referenced MMRole character images and COCO train2017 images (about
+260 MB). Fetch them into `projects/mmrole/images/` with:
+
+```bash
+python tools/download_mmrole_images.py
+```
+
+The script downloads only images referenced by the annotations and finishes by
+checking that every example resolves to an image. Add
+`--coco-dir /path/to/coco/train2017` to copy from an existing COCO download.
 
 ### 4. Optional: add API keys and choose model storage
 
@@ -221,8 +234,9 @@ python tools/download_data.py
 ```
 
 The Hugging Face release includes SOTOPIA, BigToM, and MMRole annotations. It
-does not duplicate MMRole images; obtain those from the upstream MMRole dataset
-as described in the [MMRole guide](projects/mmrole/README.md).
+does not redistribute MMRole images; fetch them with
+`python tools/download_mmrole_images.py` as described in the
+[MMRole guide](projects/mmrole/README.md).
 
 Run the following commands from the repository root after completing the
 installation steps above.
@@ -289,8 +303,9 @@ evaluation.
 
 ### Train MMRole from the released annotations
 
-After downloading the released annotations and obtaining the MMRole images,
-the training stages run locally and do not require an OpenAI API key.
+After running `python tools/download_data.py` and
+`python tools/download_mmrole_images.py`, the training stages run locally and
+do not require an OpenAI API key.
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python \
