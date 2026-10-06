@@ -10,13 +10,11 @@
 </p>
 
 <p align="center">
-  <sub><b>RESEARCH LINKS</b></sub>
-  <br><br>
-  🧭 <a href="https://example.com/mental-models"><b>Explore the system</b></a>
-  &nbsp;&nbsp;◆&nbsp;&nbsp;
-  📑 <a href="https://example.com/mental-models-paper.pdf"><b>Read the manuscript</b></a>
-  &nbsp;&nbsp;◆&nbsp;&nbsp;
-  🔖 <a href="https://arxiv.org/abs/0000.00000"><b>Follow the preprint</b></a>
+  <a href="https://example.com/mental-models"><img src="assets/tag-project-page.svg" height="42" alt="Project Page"></a>
+  &nbsp;
+  <a href="https://example.com/mental-models-paper.pdf"><img src="assets/tag-paper.svg" height="42" alt="Paper"></a>
+  &nbsp;
+  <a href="https://arxiv.org/abs/0000.00000"><img src="assets/tag-arxiv.svg" height="42" alt="arXiv"></a>
 </p>
 
 ## Introduction
