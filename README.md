@@ -2,9 +2,9 @@
 <h3 align="center"><b>NeurIPS 2026</b></h3>
 
 <p align="center">
-  <strong>Hanan Gani</strong> &nbsp;&middot;&nbsp;
-  <strong>Lulu Shao</strong> &nbsp;&middot;&nbsp;
-  <strong>Manmohan Chandraker</strong>
+  <strong><a href="https://hananshafi.github.io/">Hanan Gani</a></strong> &nbsp;&middot;&nbsp;
+  <strong><a href="https://www.linkedin.com/in/lulu-shao-89a477210">Lulu Shao</a></strong> &nbsp;&middot;&nbsp;
+  <strong><a href="https://cseweb.ucsd.edu/~mkchandraker/">Manmohan Chandraker</a></strong>
   <br>
   University of California, San Diego
 </p>
