@@ -5,7 +5,7 @@ from official_eval_common import load_policy_bundle, build_benchmark_prompt, nor
 
 BASE="Qwen/Qwen2.5-7B-Instruct"
 STAGE1="projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt"
-POLICY="projects/bigtom/checkpoints/stage4_qwen_5k/step_300"
+POLICY="projects/bigtom/checkpoints/stage3_qwen_5k/step_300"
 EDIR="projects/bigtom/runs/e1"
 
 ap=argparse.ArgumentParser()

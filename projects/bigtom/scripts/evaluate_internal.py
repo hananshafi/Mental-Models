@@ -1,10 +1,10 @@
 """
-BigToM Stage 5 — internal sanity-check evaluation.
+BigToM internal sanity-check evaluation.
 
 Evaluates any of:
     - `base`  : plain base model, no ToM encoder
-    - `sft`   : Stage 3 z-conditioned SFT checkpoint
-    - `grpo`  : Stage 4 z-conditioned GRPO checkpoint
+    - `sft`   : Stage 2 z-conditioned SFT checkpoint
+    - `grpo`  : Stage 3 z-conditioned GRPO checkpoint
 
 on:
     - BigToM   (forward_belief, forward_action, backward_belief; true/false/control)
@@ -31,7 +31,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from qwen_client import QwenClient
 from stage1_train_mental_reward import build_encoder_context, build_presented_story
-from stage3_policy_sft import (
+from stage2_policy_sft import (
     MENTAL_PREFIX_LEN,
     MentalPrefixProjector,
     build_prompt,
@@ -379,7 +379,7 @@ def main():
     ap.add_argument("--stage1_ckpt", type=str,
                     default="projects/bigtom/checkpoints/stage1/epoch_2")
     ap.add_argument("--policy_ckpt", type=str, default=None,
-                    help="stage3 or stage4 checkpoint dir (has policy_lora/ + projector.pt)")
+                    help="Stage 2 SFT or Stage 3 GRPO checkpoint dir (has policy_lora/ + projector.pt)")
     ap.add_argument("--bigtom_csv", type=str,
                     default="third_party/src/bigtom/data/bigtom/bigtom.csv")
     ap.add_argument("--tomi_path", type=str, default="")

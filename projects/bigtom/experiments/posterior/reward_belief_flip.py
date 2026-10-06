@@ -10,7 +10,7 @@ preference exactly with the belief. This probes belief-tracking (recon's target)
 """
 import sys, json, argparse, collections, torch
 sys.path.insert(0, "projects/bigtom/scripts")
-from stage3_policy_sft import load_stage1_encoder
+from stage2_policy_sft import load_stage1_encoder
 from stage1_train_mental_reward import BigToMRecursiveDataset, collate
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader, Subset

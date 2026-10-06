@@ -1,15 +1,15 @@
 """
-BigToM Stage 4 — GRPO on the z-conditioned QA policy.
+BigToM Stage 3 — GRPO on the z-conditioned QA policy.
 
-Starting from the Stage 3 SFT checkpoint, run GRPO where:
+Starting from the Stage 2 SFT checkpoint, run GRPO where:
 
   - context + question -> (z1, z2) via frozen Stage-1 encoder
   - mental prefix injected as input embeddings in front of the prompt
   - candidates sampled via `generate(inputs_embeds=..)`
   - reward = frozen Stage-1 joint_outcome_head(z1, z2, completion_hidden)
-  - KL penalty vs. the frozen Stage-3 SFT reference
+  - KL penalty vs. the frozen Stage-2 SFT reference
 
-The prompt/task format matches Stage 3 exactly.
+The prompt/task format matches Stage 2 exactly.
 """
 import argparse
 import json
@@ -29,7 +29,7 @@ from transformers import (
 )
 from peft import PeftModel
 
-from stage3_policy_sft import (
+from stage2_policy_sft import (
     MENTAL_PREFIX_LEN,
     MentalPrefixProjector,
     build_prompt,
@@ -384,27 +384,27 @@ class BigToMGRPO:
 # ──────────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
-def _load_stage3_policy(base_model_name, stage3_ckpt: Path, device):
+def _load_stage2_policy(base_model_name, stage2_ckpt: Path, device):
     print(f"Loading policy base: {base_model_name}")
     base = AutoModelForCausalLM.from_pretrained(
         base_model_name, torch_dtype=torch.bfloat16,
         trust_remote_code=True, device_map={"": device},
     )
-    lora_dir = stage3_ckpt / "policy_lora"
+    lora_dir = stage2_ckpt / "policy_lora"
     if not lora_dir.exists():
-        raise FileNotFoundError(f"No policy_lora in {stage3_ckpt}")
+        raise FileNotFoundError(f"No policy_lora in {stage2_ckpt}")
     policy = PeftModel.from_pretrained(base, str(lora_dir), is_trainable=True)
     policy.config.pad_token_id = base.config.pad_token_id
     policy.gradient_checkpointing_disable()
     return policy
 
 
-def _load_ref_policy(base_model_name, stage3_ckpt: Path, device):
+def _load_ref_policy(base_model_name, stage2_ckpt: Path, device):
     base = AutoModelForCausalLM.from_pretrained(
         base_model_name, torch_dtype=torch.bfloat16,
         trust_remote_code=True, device_map={"": device},
     )
-    lora_dir = stage3_ckpt / "policy_lora"
+    lora_dir = stage2_ckpt / "policy_lora"
     ref = PeftModel.from_pretrained(base, str(lora_dir), is_trainable=False)
     ref = ref.merge_and_unload()
     ref.eval()
@@ -420,10 +420,10 @@ def main():
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--stage1_ckpt", type=str,
                     default="projects/bigtom/checkpoints/stage1/epoch_2")
-    ap.add_argument("--stage3_ckpt", type=str,
-                    default="projects/bigtom/checkpoints/stage3/epoch_1")
+    ap.add_argument("--stage2_ckpt", type=str,
+                    default="projects/bigtom/checkpoints/stage2/epoch_1")
     ap.add_argument("--out", type=str,
-                    default="projects/bigtom/checkpoints/stage4")
+                    default="projects/bigtom/checkpoints/stage3")
     ap.add_argument("--z_dim", type=int, default=128)
     ap.add_argument("--epochs", type=int, default=1)
     ap.add_argument("--prompts_per_step", type=int, default=4)
@@ -461,9 +461,9 @@ def main():
         encoder, tok, encoder_device, ensemble_weight=args.ensemble_weight,
     )
 
-    policy = _load_stage3_policy(args.base_model, Path(args.stage3_ckpt), policy_device)
+    policy = _load_stage2_policy(args.base_model, Path(args.stage2_ckpt), policy_device)
 
-    proj_pt = Path(args.stage3_ckpt) / "projector.pt"
+    proj_pt = Path(args.stage2_ckpt) / "projector.pt"
     projector = MentalPrefixProjector(
         z_dim=args.z_dim, hidden_size=policy.config.hidden_size, num_prefix=MENTAL_PREFIX_LEN,
     ).to(policy_device).float()
@@ -471,7 +471,7 @@ def main():
     for p in projector.parameters():
         p.requires_grad = True
 
-    ref = _load_ref_policy(args.base_model, Path(args.stage3_ckpt), ref_device)
+    ref = _load_ref_policy(args.base_model, Path(args.stage2_ckpt), ref_device)
 
     dataset = GRPOPromptDataset(args.data)
     loader = DataLoader(

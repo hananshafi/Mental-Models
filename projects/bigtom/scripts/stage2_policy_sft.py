@@ -1,5 +1,5 @@
 """
-BigToM Stage 3 — z-conditioned QA SFT.
+BigToM Stage 2 — z-conditioned QA SFT.
 
 Loads the frozen recursive ToM encoder from Stage 1, encodes each prompt into
 (z1, z2), projects both into a learned mental soft-prompt prefix, and fine-tunes
@@ -277,7 +277,7 @@ def main():
     ap.add_argument("--stage1_ckpt", type=str,
                     default="projects/bigtom/checkpoints/stage1/epoch_2")
     ap.add_argument("--out", type=str,
-                    default="projects/bigtom/checkpoints/stage3")
+                    default="projects/bigtom/checkpoints/stage2")
     ap.add_argument("--z_dim", type=int, default=128)
     ap.add_argument("--epochs", type=int, default=2)
     ap.add_argument("--batch_size", type=int, default=2)

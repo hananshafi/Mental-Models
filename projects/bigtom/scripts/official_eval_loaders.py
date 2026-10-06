@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
-from stage5_evaluate import load_bigtom_eval
+from evaluate_internal import load_bigtom_eval
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent

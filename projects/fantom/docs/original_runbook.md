@@ -13,8 +13,8 @@ fine-tune, select checkpoints, or optimize prompts on FANToM labels.
 The primary rebuttal comparison is:
 
 1. Qwen2.5-7B-Instruct base model.
-2. BigToM Stage-3 SFT model with the learned first-/second-order latent prefix.
-3. BigToM Stage-4 GRPO model with the same latent prefix.
+2. BigToM Stage-2 SFT model with the learned first-/second-order latent prefix.
+3. BigToM Stage-3 GRPO model with the same latent prefix.
 4. SOTOPIA Qwen GRPO policy as a policy-only transfer control.
 
 The BigToM models are the cleanest test of the paper's latent mental-model

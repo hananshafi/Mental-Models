@@ -9,7 +9,7 @@ from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from stage1_train_mental_reward import build_encoder_context
-from stage3_policy_sft import MENTAL_PREFIX_LEN, MentalPrefixProjector, load_stage1_encoder
+from stage2_policy_sft import MENTAL_PREFIX_LEN, MentalPrefixProjector, load_stage1_encoder
 
 
 DEFAULT_SYSTEM_PROMPT = (

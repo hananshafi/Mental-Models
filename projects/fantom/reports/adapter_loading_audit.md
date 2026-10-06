@@ -18,8 +18,8 @@ the adapter modules but silently failed to install the saved tensors.
 | BigToM SFT epoch 1 | `53b083fe002de54a5004fcd186bf80bc932356c59afd8a98a1b4a79aaee68d39` | 3.397536 |
 | BigToM GRPO step 300 | `0e7c5d1524476dc3ee72a9b302de850df0eb6332cee87ed5b80a74aaf1ad3115` | 0.054019 |
 
-Stage-4 checkpoint metadata confirms that GRPO step 300 was initialized from
-the configured Stage-3 SFT checkpoint. The two adapter files have different
+Stage-3 checkpoint metadata confirms that GRPO step 300 was initialized from
+the configured Stage-2 SFT checkpoint. The two adapter files have different
 inodes, hashes, and effective weights.
 
 ## Repair

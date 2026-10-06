@@ -1,6 +1,6 @@
 # E1 — ToMi belief minimal-pairs: sensitivity + specificity (final)
 
-**Model:** best ToMi checkpoint = `stage4_qwen_5k/step_300` GRPO policy + `stage1_qwen_5k/best_ckpt`
+**Model:** best ToMi checkpoint = `stage3_qwen_5k/step_300` GRPO policy + `stage1_qwen_5k/best_ckpt`
 mental encoder (the config behind `official_grpo_tomi`, ToMi acc ≈ 89%). Base = Qwen2.5-7B-Instruct.
 **Data:** 500 synthesized canonical Sally-Anne scenarios × {FB, TB} matched pairs (+ a clean,
 move-free belief-irrelevant perturbation of each), built from ToMi's own vocabulary/templates; gold

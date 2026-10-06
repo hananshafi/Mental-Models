@@ -268,22 +268,22 @@ CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward
   --out projects/bigtom/checkpoints/stage1_qwen \
   --epochs 3
 
-CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage3_policy_sft.py \
+CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage2_policy_sft.py \
   --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
-  --out projects/bigtom/checkpoints/stage3_qwen
+  --out projects/bigtom/checkpoints/stage2_qwen
 
-CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage4_grpo.py \
+CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage3_grpo.py \
   --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
   --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
-  --stage3_ckpt projects/bigtom/checkpoints/stage3_qwen/epoch_1 \
-  --out projects/bigtom/checkpoints/stage4_qwen \
+  --stage2_ckpt projects/bigtom/checkpoints/stage2_qwen/epoch_1 \
+  --out projects/bigtom/checkpoints/stage3_qwen \
   --max_steps 300 \
   --save_every 100
 ```
 
-The historical numbering is intentional: this implementation has Stages 1,
-3, 4, and 5, with no missing Stage 2 script. See the
+The pipeline is ordered as Stage 1 mental/reward training, Stage 2 latent-prefix
+SFT, and Stage 3 GRPO. See the
 [BigToM guide](projects/bigtom/README.md) for official BigToM, ToMi, and FANToM
 evaluation.
 

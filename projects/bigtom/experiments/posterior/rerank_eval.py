@@ -6,7 +6,7 @@ As auxiliary components are dropped from the reward model, this single number mo
 """
 import sys, json, argparse, torch, torch.nn.functional as F
 sys.path.insert(0, "projects/bigtom/scripts")
-from stage3_policy_sft import load_stage1_encoder
+from stage2_policy_sft import load_stage1_encoder
 from stage1_train_mental_reward import build_encoder_context
 from transformers import AutoTokenizer
 from pathlib import Path
