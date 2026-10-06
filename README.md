@@ -56,11 +56,11 @@ paper.
 
 ### Training and in-domain evaluation
 
-| Benchmark | Modality | Role in the paper | Code |
+| Benchmark | Modality | Role in the paper | Training guide |
 |---|---|---|---|
-| **SOTOPIA** | Language interaction | Coupled mental/reward learning, policy training, and social-agent evaluation | [`projects/sotopia`](projects/sotopia/README.md) |
-| **BigToM** | Text Theory of Mind | Mental/reward learning, latent-prefix SFT, GRPO, and controlled ToM evaluation | [`projects/bigtom`](projects/bigtom/README.md) |
-| **MMRole** | Vision-language interaction | Multimodal mental modeling and role-playing policy training | [`projects/mmrole`](projects/mmrole/README.md) |
+| **SOTOPIA** | Language interaction | Coupled mental/reward learning, policy training, and social-agent evaluation | [Train SOTOPIA](projects/sotopia/README.md) |
+| **BigToM** | Text Theory of Mind | Mental/reward learning, latent-prefix SFT, GRPO, and controlled ToM evaluation | [Train BigToM](projects/bigtom/README.md) |
+| **MMRole** | Vision-language interaction | Multimodal mental modeling and role-playing policy training | [Train MMRole](projects/mmrole/README.md) |
 
 ### Zero-shot transfer evaluation
 
@@ -180,27 +180,115 @@ python tools/validate_repository.py
 Use `python tools/doctor.py --strict` after installing the complete environment
 and downloading every pinned upstream source.
 
-## Running the pipelines
+## Training quickstart
 
-Each project README provides exact data, training, checkpoint, and evaluation
-commands. Common entrypoints are:
+This repository includes the complete training pipelines, not only evaluation
+code. The dataset-specific guides document data generation, checkpoint
+selection, resuming, and evaluation:
+
+- [SOTOPIA training guide](projects/sotopia/README.md): coupled mental/reward
+  learning followed by SFT warm-up and mental-reward-guided GRPO.
+- [BigToM training guide](projects/bigtom/README.md): mental/reward learning,
+  latent-prefix SFT, and GRPO.
+- [MMRole training guide](projects/mmrole/README.md): visual mental/reward
+  learning, multimodal SFT, and learned-reward GRPO.
+
+Run the following commands from the repository root after completing the
+installation steps above.
+
+### Train SOTOPIA
 
 ```bash
-# SOTOPIA: construct training episodes
-python projects/sotopia/scripts/generate_sotopia_full_pipeline.py
+export OPENAI_API_KEY=...
+python projects/sotopia/scripts/generate_sotopia_full_pipeline.py \
+  --output projects/sotopia/data/sotopia_turn_rewards_v3.jsonl \
+  --model gpt-4o \
+  --limit 1500
 
-# BigToM: generate and annotate scenarios
+CUDA_VISIBLE_DEVICES=0 python \
+  projects/sotopia/scripts/stage1_train_coupled_mental_reward_v3.py \
+  --model_name Qwen/Qwen2.5-7B-Instruct \
+  --data_path projects/sotopia/data/sotopia_turn_rewards_v3.jsonl \
+  --output_dir projects/sotopia/checkpoints/coupled_mental_reward_qwen_v3 \
+  --gpu 0
+
+CUDA_VISIBLE_DEVICES=0,1 python \
+  projects/sotopia/scripts/stage2_grpo_agent_training_v3.py \
+  --policy_model_name Qwen/Qwen2.5-7B-Instruct \
+  --reward_model_name Qwen/Qwen2.5-7B-Instruct \
+  --reward_checkpoint_dir projects/sotopia/checkpoints/coupled_mental_reward_qwen_v3/best \
+  --data_path projects/sotopia/data/sotopia_turn_rewards_v3.jsonl \
+  --output_dir projects/sotopia/checkpoints/grpo_agent_qwen_v3 \
+  --preset qwen \
+  --gpu 0,1
+```
+
+Stage 2 performs its SFT warm-up before GRPO. See the
+[SOTOPIA guide](projects/sotopia/README.md) for checkpoint reuse, evaluation,
+and supervision-fraction ablations.
+
+### Train BigToM
+
+```bash
+export OPENAI_API_KEY=...
 bash projects/bigtom/scripts/run_generate_and_annotate.sh
 
-# MMRole: prepare a pilot subset
-bash projects/mmrole/scripts/run_pipeline.sh --pilot
+CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward.py \
+  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --base_model Qwen/Qwen2.5-7B-Instruct \
+  --out projects/bigtom/checkpoints/stage1_qwen \
+  --epochs 3
 
-# Validate BigToM, ToMi, and FANToM evaluation assets without loading a model
-python projects/bigtom/scripts/evaluate_official_benchmarks.py \
-  --datasets all \
-  --out_dir projects/bigtom/runs/dry_run \
-  --dry_run
+CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage3_policy_sft.py \
+  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
+  --out projects/bigtom/checkpoints/stage3_qwen
+
+CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage4_grpo.py \
+  --data projects/bigtom/data/bigtom_qwen_annotated.jsonl \
+  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
+  --stage3_ckpt projects/bigtom/checkpoints/stage3_qwen/epoch_1 \
+  --out projects/bigtom/checkpoints/stage4_qwen \
+  --max_steps 300 \
+  --save_every 100
 ```
+
+The historical numbering is intentional: this implementation has Stages 1,
+3, 4, and 5, with no missing Stage 2 script. See the
+[BigToM guide](projects/bigtom/README.md) for official BigToM, ToMi, and FANToM
+evaluation.
+
+### Train MMRole
+
+```bash
+export OPENAI_API_KEY=...
+bash projects/mmrole/scripts/run_pipeline.sh --pilot
+# After checking the pilot output:
+bash projects/mmrole/scripts/run_pipeline.sh
+
+CUDA_VISIBLE_DEVICES=0 python \
+  projects/mmrole/scripts/stage0_reward_model_visual_tom.py \
+  --base_model Qwen/Qwen2.5-VL-7B-Instruct \
+  --output_dir projects/mmrole/checkpoints/stage0_reward_v3 \
+  --gpu 0
+
+CUDA_VISIBLE_DEVICES=0 python projects/mmrole/scripts/stage1_sft_visual_tom.py \
+  --base_model Qwen/Qwen2.5-VL-7B-Instruct \
+  --mental_prefix_checkpoint_dir projects/mmrole/checkpoints/stage0_reward_v3/best \
+  --output_dir projects/mmrole/checkpoints/stage1_sft \
+  --gpu 0
+
+CUDA_VISIBLE_DEVICES=0,1,2 python \
+  projects/mmrole/scripts/stage2_grpo_learned_reward.py \
+  --sft_checkpoint projects/mmrole/checkpoints/stage1_sft/best \
+  --reward_checkpoint_dir projects/mmrole/checkpoints/stage0_reward_v3/best \
+  --mental_prefix_checkpoint_dir projects/mmrole/checkpoints/stage0_reward_v3/best \
+  --output_dir projects/mmrole/checkpoints/stage2_grpo \
+  --gpu 0,1,2
+```
+
+See the [MMRole guide](projects/mmrole/README.md) for the plain-SFT control,
+LLaVA-NeXT/Mistral variant, optional DPO stage, and official evaluation.
 
 Generated artifacts follow one convention:
 
