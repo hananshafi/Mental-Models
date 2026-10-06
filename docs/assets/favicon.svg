@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mental Models">
+  <rect width="64" height="64" rx="14" fill="#f4f1e9"/>
+  <circle cx="32" cy="18" r="7" fill="#716a9f"/>
+  <circle cx="19" cy="43" r="7" fill="#bd8a36"/>
+  <circle cx="45" cy="43" r="7" fill="#527662"/>
+  <path d="M29 24 22 36M35 24l7 12M26 43h12" fill="none" stroke="#171717" stroke-width="3" stroke-linecap="round"/>
+</svg>

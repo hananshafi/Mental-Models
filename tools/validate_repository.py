@@ -9,9 +9,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP_PARTS = {".git", "artifacts", "__pycache__"}
+BINARY_SUFFIXES = {".gif", ".jpeg", ".jpg", ".pdf", ".png", ".webp"}
 REQUIRED = (
     "README.md",
     "environment.yml",
+    "docs/.nojekyll",
+    "docs/index.html",
+    "docs/styles.css",
+    "docs/script.js",
+    "docs/assets/favicon.svg",
+    "docs/assets/mental-model-teaser.png",
+    "docs/assets/method-overview.png",
+    "docs/assets/sotopia-results.png",
     "third_party/sources.lock.json",
     "projects/sotopia/README.md",
     "projects/bigtom/README.md",
@@ -76,6 +85,8 @@ def main() -> int:
         relative = path.relative_to(ROOT)
         if path.stat().st_size > 5 * 1024 * 1024:
             errors.append(f"file exceeds 5 MiB: {relative}")
+        if path.suffix.lower() in BINARY_SUFFIXES:
+            continue
         try:
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:

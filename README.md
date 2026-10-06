@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://example.com/mental-models"><img src="assets/tag-project-page.svg" height="42" alt="Project Page"></a>
+  <a href="https://hananshafi.github.io/Mental-Models/"><img src="assets/tag-project-page.svg" height="42" alt="Project Page"></a>
   &nbsp;
   <a href="https://example.com/mental-models-paper.pdf"><img src="assets/tag-paper.svg" height="42" alt="Paper"></a>
   &nbsp;

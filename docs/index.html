@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Mental Models for Multi-Agent Systems: explicit recursive partner-state representations for language and multimodal agents."
+    />
+    <meta
+      name="keywords"
+      content="mental models, theory of mind, multi-agent systems, LLM agents, multimodal agents, NeurIPS 2026"
+    />
+    <meta name="theme-color" content="#f4f1e9" />
+    <meta property="og:title" content="Mental Models for Multi-Agent Systems" />
+    <meta
+      property="og:description"
+      content="Learning explicit recursive mental states to guide multi-agent policy training."
+    />
+    <meta
+      property="og:image"
+      content="https://hananshafi.github.io/Mental-Models/assets/mental-model-teaser.png"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://hananshafi.github.io/Mental-Models/" />
+    <link rel="canonical" href="https://hananshafi.github.io/Mental-Models/" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="script.js"></script>
+    <title>Mental Models for Multi-Agent Systems</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <header class="site-header" aria-label="Primary navigation">
+      <div class="nav-shell">
+        <a class="site-brand" href="#top" aria-label="Mental Models home">
+          <span class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span>Mental Models</span>
+        </a>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="site-menu"
+          aria-label="Open navigation"
+        >
+          <span></span><span></span>
+        </button>
+        <nav class="site-menu" id="site-menu">
+          <a href="#overview">Overview</a>
+          <a href="#method">Method</a>
+          <a href="#results">Results</a>
+          <a href="#transfer">Transfer</a>
+          <a href="#citation">Citation</a>
+          <a class="nav-code" href="https://github.com/hananshafi/Mental-Models">Code</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="hero" id="top">
+        <div class="container hero-inner">
+          <div class="venue-line">
+            <span class="venue-badge">NeurIPS 2026</span>
+            <span>Language and multimodal multi-agent systems</span>
+          </div>
+          <h1>
+            Mental Models
+            <span>for Multi-Agent Systems</span>
+          </h1>
+          <p class="hero-dek">
+            Agents that explicitly model what others believe, intend, and expect can make better
+            decisions under partial observability—without adding an extra inference pass at deployment.
+          </p>
+
+          <div class="authors" aria-label="Authors">
+            <a href="https://hananshafi.github.io/">Hanan Gani</a>
+            <span aria-hidden="true">·</span>
+            <a href="https://www.linkedin.com/in/lulu-shao-89a477210">Lulu Shao</a>
+            <span aria-hidden="true">·</span>
+            <a href="https://cseweb.ucsd.edu/~mkchandraker/">Manmohan Chandraker</a>
+          </div>
+          <p class="affiliation">University of California, San Diego</p>
+
+          <div class="resource-links" aria-label="Publication resources">
+            <a class="resource-button is-placeholder" href="#" aria-disabled="true" data-placeholder>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 3h9l3 3v15H6zM15 3v4h4M9 11h6M9 15h6" />
+              </svg>
+              <span>Paper</span>
+              <small>coming soon</small>
+            </a>
+            <a class="resource-button is-placeholder" href="#" aria-disabled="true" data-placeholder>
+              <span class="resource-monogram" aria-hidden="true">aX</span>
+              <span>arXiv</span>
+              <small>coming soon</small>
+            </a>
+            <a class="resource-button is-primary" href="https://github.com/hananshafi/Mental-Models">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5 3 12l5 7M16 5l5 7-5 7M14 3l-4 18" />
+              </svg>
+              <span>Code</span>
+            </a>
+          </div>
+          <p class="resource-status" id="resource-status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="teaser-section" aria-labelledby="teaser-caption">
+        <div class="container-wide">
+          <figure class="paper-figure teaser-figure">
+            <img
+              src="assets/mental-model-teaser.png"
+              alt="A partially observable negotiation, inferred buyer and seller mental states, and a successful mental-model-enabled interaction."
+            />
+            <figcaption id="teaser-caption">
+              Explicitly modeling hidden beliefs, goals, and likely strategies helps an agent choose
+              adaptive actions across negotiation, cooperation, competition, and assistance.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="section" id="overview">
+        <div class="container">
+          <div class="section-heading">
+            <p class="section-kicker">01 · Motivation</p>
+            <h2>Model the person behind the observation.</h2>
+          </div>
+          <div class="overview-grid">
+            <div class="overview-lead">
+              <p>
+                Multi-agent interaction is partially observable. A dialogue reveals actions and
+                language, but not the other agent’s goals, knowledge, constraints, or expectations.
+                Policies trained only on surface behavior can therefore choose plausible responses
+                that are strategically or socially wrong.
+              </p>
+            </div>
+            <div class="abstract-block">
+              <h3>Abstract</h3>
+              <p>
+                We introduce <strong>mental-model-enabled agents</strong>, a framework that learns a
+                latent model of a counterpart from interaction history and uses it as a reusable
+                decision variable. The model represents first- and second-order mental states and is
+                trained jointly with a belief-conditioned reward model. This signal then guides
+                policy optimization, while the final policy acts independently at inference time.
+                Across language-only and multimodal benchmarks, explicit mental-state modeling
+                improves interaction quality and Theory-of-Mind performance over base agents.
+              </p>
+            </div>
+          </div>
+
+          <div class="capability-grid" aria-label="Core capabilities">
+            <article class="capability capability-belief">
+              <span class="capability-number">01</span>
+              <h3>Infer</h3>
+              <p>Estimate a partner’s beliefs, intent, task-relevant thoughts, and uncertainty.</p>
+            </article>
+            <article class="capability capability-recursive">
+              <span class="capability-number">02</span>
+              <h3>Recurse</h3>
+              <p>Represent what the partner believes about the acting agent and the shared state.</p>
+            </article>
+            <article class="capability capability-action">
+              <span class="capability-number">03</span>
+              <h3>Act</h3>
+              <p>Use the inferred state to prefer actions that satisfy task and social constraints.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-tinted" id="method">
+        <div class="container-wide">
+          <div class="section-heading centered">
+            <p class="section-kicker">02 · Method</p>
+            <h2>Partner modeling shapes training, not deployment cost.</h2>
+            <p class="section-intro">
+              The mental-state encoder and reward model are coupled so that the latent is both
+              interpretable and useful for evaluating candidate actions.
+            </p>
+          </div>
+
+          <figure class="paper-figure method-figure">
+            <img
+              src="assets/method-overview.png"
+              alt="Three-phase method: jointly learn recursive mental states and rewards, train a policy with mental-conditioned rewards, and deploy only the policy."
+            />
+            <figcaption>
+              First- and second-order belief, intent, and thought subspaces condition reward
+              prediction; the resulting mental reward trains a standalone policy.
+            </figcaption>
+          </figure>
+
+          <div class="method-steps">
+            <article>
+              <span>Phase 1</span>
+              <h3>Learn a recursive latent state</h3>
+              <p>Infer first- and second-order mental states from the observed interaction history.</p>
+            </article>
+            <article>
+              <span>Phase 2</span>
+              <h3>Score policy-sampled actions</h3>
+              <p>Use the frozen mental-conditioned reward model to guide policy optimization.</p>
+            </article>
+            <article>
+              <span>Phase 3</span>
+              <h3>Deploy the policy alone</h3>
+              <p>No teacher, mental-state encoder, or reward model is required at test time.</p>
+            </article>
+          </div>
+
+          <div class="benchmark-strip" aria-label="Evaluation coverage">
+            <div><span>Train + evaluate</span><strong>SOTOPIA · BigToM · MMRole</strong></div>
+            <div><span>Zero-shot transfer</span><strong>Craigslist-Bargain · ToMi · FANToM</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="results">
+        <div class="container">
+          <div class="section-heading">
+            <p class="section-kicker">03 · Results</p>
+            <h2>One framework, complementary evidence.</h2>
+            <p class="section-intro">
+              We test open-ended social interaction, controlled belief tracking, and multimodal
+              role-playing with the same mental-model learning principle.
+            </p>
+          </div>
+
+          <div class="metric-grid" aria-label="Headline results">
+            <article>
+              <strong>+11.5%</strong>
+              <span>SOTOPIA relative gain</span>
+              <p>Qwen2.5-7B, averaged across two partner settings.</p>
+            </article>
+            <article>
+              <strong>+26.7 pp</strong>
+              <span>BigToM paired accuracy</span>
+              <p>Average improvement across the six reported TB∧FB settings.</p>
+            </article>
+            <article>
+              <strong>1.019</strong>
+              <span>MMRole out-of-domain</span>
+              <p>Overall score versus 0.981 for MMRole-Agent.</p>
+            </article>
+            <article>
+              <strong>52.2%</strong>
+              <span>FANToM second order</span>
+              <p>Zero-shot BigToM transfer with the official scorer.</p>
+            </article>
+          </div>
+
+          <div class="results-explorer">
+            <div class="tab-list" role="tablist" aria-label="Benchmark results">
+              <button
+                id="tab-sotopia"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-sotopia"
+              >
+                SOTOPIA
+              </button>
+              <button
+                id="tab-bigtom"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-bigtom"
+                tabindex="-1"
+              >
+                BigToM
+              </button>
+              <button
+                id="tab-mmrole"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-mmrole"
+                tabindex="-1"
+              >
+                MMRole
+              </button>
+            </div>
+
+            <section
+              class="result-panel"
+              id="panel-sotopia"
+              role="tabpanel"
+              aria-labelledby="tab-sotopia"
+            >
+              <div class="result-panel-grid">
+                <figure class="result-plot">
+                  <img
+                    src="assets/sotopia-results.png"
+                    alt="Bar charts comparing our SOTOPIA result against closed-source agents and SFT or GRPO training strategies."
+                  />
+                </figure>
+                <div class="result-copy">
+                  <p class="result-eyebrow">SOTOPIA-All · GPT-4o-mini partner</p>
+                  <h3>Consistent gains across three 7B model families.</h3>
+                  <p>
+                    Mental-model guidance improves the overall score for LLaMA, Mistral, and Qwen,
+                    with the largest gain on Qwen2.5-7B.
+                  </p>
+                  <div class="table-scroll">
+                    <table>
+                      <thead>
+                        <tr><th>Backbone</th><th>Base</th><th>Ours</th><th>Gain</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td>LLaMA2-7B</td><td>3.330</td><td><strong>3.541</strong></td><td>+0.211</td></tr>
+                        <tr><td>Mistral-7B</td><td>3.511</td><td><strong>3.784</strong></td><td>+0.273</td></tr>
+                        <tr><td>Qwen2.5-7B</td><td>3.290</td><td><strong>3.856</strong></td><td>+0.566</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="result-panel"
+              id="panel-bigtom"
+              role="tabpanel"
+              aria-labelledby="tab-bigtom"
+              hidden
+            >
+              <div class="result-copy result-copy-wide">
+                <p class="result-eyebrow">Paired true-belief and false-belief accuracy</p>
+                <h3>The model maintains counterfactual mental states more consistently.</h3>
+                <p>
+                  TB∧FB gives credit only when both branches of the same scenario are correct. Our
+                  model improves paired consistency across forward belief, forward action, and
+                  backward belief tasks.
+                </p>
+                <div class="table-scroll">
+                  <table class="dense-table">
+                    <thead>
+                      <tr>
+                        <th rowspan="2">Task</th><th rowspan="2">Model</th>
+                        <th colspan="2">TB∧FB accuracy</th>
+                      </tr>
+                      <tr><th>Without initial belief</th><th>With initial belief</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td rowspan="3">Forward belief</td><td>Base</td><td>77.0</td><td>48.0</td></tr>
+                      <tr><td>SFT</td><td>84.5</td><td>92.0</td></tr>
+                      <tr class="ours-row"><td>Ours</td><td>96.0</td><td>97.5</td></tr>
+                      <tr><td rowspan="3">Forward action</td><td>Base</td><td>63.5</td><td>67.5</td></tr>
+                      <tr><td>SFT</td><td>76.5</td><td>73.0</td></tr>
+                      <tr class="ours-row"><td>Ours</td><td>78.5</td><td>80.0</td></tr>
+                      <tr><td rowspan="3">Backward belief</td><td>Base</td><td>77.5</td><td>52.5</td></tr>
+                      <tr><td>SFT</td><td>85.0</td><td>91.0</td></tr>
+                      <tr class="ours-row"><td>Ours</td><td>95.5</td><td>98.5</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="result-panel"
+              id="panel-mmrole"
+              role="tabpanel"
+              aria-labelledby="tab-mmrole"
+              hidden
+            >
+              <div class="result-copy result-copy-wide">
+                <p class="result-eyebrow">Official normalized multimodal role-play metrics</p>
+                <h3>Improvement extends to held-out character and image contexts.</h3>
+                <p>
+                  The strongest gains occur on coherence, response accuracy, personality
+                  consistency, knowledge consistency, and tone consistency—dimensions that require
+                  grounded character-state reasoning rather than fluent captioning alone.
+                </p>
+                <div class="table-scroll">
+                  <table>
+                    <thead>
+                      <tr><th>Split</th><th>MMRole-Agent</th><th>Ours</th><th>Gain</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Overall</td><td>0.994</td><td><strong>1.023</strong></td><td>+0.029</td></tr>
+                      <tr><td>In-domain</td><td>0.999</td><td><strong>1.024</strong></td><td>+0.025</td></tr>
+                      <tr><td>Out-of-domain</td><td>0.981</td><td><strong>1.019</strong></td><td>+0.038</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-dark" id="transfer">
+        <div class="container">
+          <div class="section-heading light-heading">
+            <p class="section-kicker">04 · Transfer</p>
+            <h2>The learned signal travels beyond its training benchmark.</h2>
+            <p class="section-intro">
+              Transfer datasets are evaluation-only: no target labels are used for policy training.
+            </p>
+          </div>
+
+          <div class="transfer-grid">
+            <article>
+              <div class="transfer-meta"><span>Trained on SOTOPIA</span><span>Zero-shot</span></div>
+              <h3>Craigslist-Bargain</h3>
+              <p>Cross-domain negotiation retains high deal rates while reducing walkaways.</p>
+              <dl>
+                <div><dt>Qwen deal rate</dt><dd>91% <span>to</span> 94%</dd></div>
+                <div><dt>Qwen walkaway</dt><dd>7% <span>to</span> 5%</dd></div>
+              </dl>
+              <a href="https://github.com/hananshafi/Mental-Models/tree/main/projects/craigslist_bargain">View evaluation code</a>
+            </article>
+            <article>
+              <div class="transfer-meta"><span>Trained on BigToM</span><span>Zero-shot</span></div>
+              <h3>ToMi</h3>
+              <p>A different synthetic format tests whether nested belief structure is reusable.</p>
+              <dl>
+                <div><dt>Average</dt><dd>87.92 <span>to</span> 89.16</dd></div>
+                <div><dt>Joint</dt><dd>55.16 <span>to</span> 60.46</dd></div>
+              </dl>
+              <a href="https://github.com/hananshafi/Mental-Models/tree/main/projects/tomi">View evaluation code</a>
+            </article>
+            <article>
+              <div class="transfer-meta"><span>Trained on BigToM</span><span>Official scorer</span></div>
+              <h3>FANToM</h3>
+              <p>Five thousand probes test transfer from dyadic training to multi-party reasoning.</p>
+              <dl>
+                <div><dt>Second order</dt><dd>49.7 <span>to</span> 52.2</dd></div>
+                <div><dt>Belief distance</dt><dd>35.2 <span>to</span> 38.0</dd></div>
+              </dl>
+              <a href="https://github.com/hananshafi/Mental-Models/tree/main/projects/fantom">View evaluation code</a>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="analysis">
+        <div class="container">
+          <div class="section-heading">
+            <p class="section-kicker">05 · Analysis</p>
+            <h2>How much supervision is enough?</h2>
+          </div>
+
+          <div class="analysis-grid">
+            <article class="supervision-chart">
+              <div class="analysis-card-heading">
+                <div>
+                  <p class="result-eyebrow">SOTOPIA · Qwen2.5-7B</p>
+                  <h3>Mental supervision improves the policy progressively.</h3>
+                </div>
+                <span>Overall score · axis 3.2–3.9</span>
+              </div>
+              <div class="bar-row">
+                <span>0%</span><div class="bar-track"><i style="--bar: 14.3%"></i></div><strong>3.300</strong>
+              </div>
+              <div class="bar-row">
+                <span>25%</span><div class="bar-track"><i style="--bar: 64.3%"></i></div><strong>3.650</strong>
+              </div>
+              <div class="bar-row">
+                <span>50%</span><div class="bar-track"><i style="--bar: 78.6%"></i></div><strong>3.750</strong>
+              </div>
+              <div class="bar-row">
+                <span>100%</span><div class="bar-track"><i style="--bar: 93.7%"></i></div><strong>3.856</strong>
+              </div>
+              <p class="chart-note">
+                Even 25% supervision improves over the mental-free baseline; performance continues
+                to rise with additional annotation coverage.
+              </p>
+            </article>
+
+            <article class="evidence-card">
+              <p class="result-eyebrow">Annotation and posterior checks</p>
+              <h3>Validated supervision, economical latent structure.</h3>
+              <div class="evidence-stat">
+                <strong>98.04%</strong>
+                <span>MMRole training turns retained after six automated checks.</span>
+              </div>
+              <div class="evidence-stat">
+                <strong>4.45 / 5</strong>
+                <span>Mean faithfulness in a blinded human audit of 100 annotations.</span>
+              </div>
+              <div class="mini-comparison">
+                <div><span>Diagonal Gaussian</span><strong>96.6</strong><small>reward accuracy</small></div>
+                <div><span>Full covariance</span><strong>96.8</strong><small>reward accuracy</small></div>
+              </div>
+              <p class="chart-note">
+                The more expensive full-covariance posterior provides no measurable practical gain
+                on the held-out BigToM split.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-tinted" id="citation">
+        <div class="container citation-grid">
+          <div class="section-heading">
+            <p class="section-kicker">06 · Citation</p>
+            <h2>Use the code, extend the setting, cite the work.</h2>
+            <p class="section-intro">
+              The repository contains separate pipelines for every benchmark reported in the paper,
+              plus reproducible transfer evaluators and pinned upstream sources.
+            </p>
+            <a class="text-link" href="https://github.com/hananshafi/Mental-Models">Open the code repository</a>
+          </div>
+          <div class="citation-block">
+            <button class="copy-button" type="button" data-copy-bibtex>Copy BibTeX</button>
+            <pre><code id="bibtex">@inproceedings{gani2026mentalmodels,
+  title     = {Mental Models for Multi-Agent Systems},
+  author    = {Gani, Hanan and Shao, Lulu and Chandraker, Manmohan},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
+}</code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <strong>Mental Models for Multi-Agent Systems</strong>
+          <span>NeurIPS 2026 · UC San Diego</span>
+        </div>
+        <div class="footer-links">
+          <a href="https://github.com/hananshafi/Mental-Models">GitHub</a>
+          <a href="#top">Back to top</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
