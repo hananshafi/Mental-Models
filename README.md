@@ -10,9 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="https://example.com/mental-models"><img src="https://img.shields.io/badge/🌐_Project_Page-00C853?style=for-the-badge" alt="Project Page"></a>
-  <a href="https://example.com/mental-models-paper.pdf"><img src="https://img.shields.io/badge/📄_Paper-B31B1B?style=for-the-badge" alt="Paper"></a>
-  <a href="https://arxiv.org/abs/0000.00000"><img src="https://img.shields.io/badge/📚_arXiv-8A2BE2?style=for-the-badge" alt="arXiv"></a>
+  <sub><b>RESEARCH LINKS</b></sub>
+  <br><br>
+  🧭 <a href="https://example.com/mental-models"><b>Explore the system</b></a>
+  &nbsp;&nbsp;◆&nbsp;&nbsp;
+  📑 <a href="https://example.com/mental-models-paper.pdf"><b>Read the manuscript</b></a>
+  &nbsp;&nbsp;◆&nbsp;&nbsp;
+  🔖 <a href="https://arxiv.org/abs/0000.00000"><b>Follow the preprint</b></a>
 </p>
 
 ## Introduction
