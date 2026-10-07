@@ -46,6 +46,11 @@ CUDA_VISIBLE_DEVICES=0 python projects/bigtom/scripts/stage1_train_mental_reward
   --epochs 3
 ```
 
+Every checkpoint (every `--save_every_steps` optimizer steps and each epoch)
+also refreshes `stage1_qwen/last/` with the optimizer, scheduler, data position,
+and RNG state. If training stops, rerun the same command with `--resume` to
+continue exactly from that point.
+
 ## Stage 2: Latent-prefix SFT
 
 This stage uses the frozen Stage 1 encoder to construct first- and second-order

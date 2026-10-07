@@ -33,6 +33,10 @@ Usage
       --data ../data/bigtom_qwen_5k_annotated.jsonl \\
       --base_model Qwen/Qwen2.5-7B-Instruct \\
       --out ../checkpoints/stage1 --epochs 3 --batch_size 4
+
+Every checkpoint also refreshes <out>/last/, which holds the optimizer,
+scheduler, data position, and RNG state. After a crash, rerun the same command
+with --resume to continue exactly where the last checkpoint left off.
 """
 import argparse
 import json
@@ -54,7 +58,8 @@ from transformers import (
     AutoTokenizer,
     get_linear_schedule_with_warmup,
 )
-from peft import LoraConfig, get_peft_model, TaskType
+from peft import LoraConfig, get_peft_model, set_peft_model_state_dict, TaskType
+from safetensors.torch import load_file
 
 
 def split_story_sentences(story: str) -> List[str]:
@@ -545,6 +550,29 @@ def compute_loss(model, batch, device,
 # ──────────────────────────────────────────────────────────────────────────────
 # Training
 # ──────────────────────────────────────────────────────────────────────────────
+RESUME_DIR = "last"
+# Arguments that must match between the interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "data", "base_model", "epochs", "batch_size", "grad_accum", "lr", "z_dim",
+    "lora_r", "lora_alpha", "max_ctx_len", "seed",
+)
+
+
+def epoch_order(num_samples: int, seed: int, epoch: int) -> List[int]:
+    """Deterministic per-epoch shuffle, so a resumed run sees the same batches."""
+    generator = torch.Generator().manual_seed(seed + epoch)
+    return torch.randperm(num_samples, generator=generator).tolist()
+
+
+def find_resume_dir(out: Path) -> Optional[Path]:
+    # "last.old" only survives if a crash interrupted the swap in save_resume_state.
+    for name in (RESUME_DIR, f"{RESUME_DIR}.old"):
+        candidate = out / name
+        if (candidate / "trainer_state.pt").is_file():
+            return candidate
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=str, default="projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl")
@@ -569,6 +597,8 @@ def main():
     ap.add_argument("--log_every_steps", type=int, default=10)
     ap.add_argument("--save_every_steps", type=int, default=100)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--resume", action="store_true",
+                    help="Continue from <out>/last, written at every checkpoint.")
     args = ap.parse_args()
 
     random.seed(args.seed)
@@ -603,13 +633,17 @@ def main():
             p.data = p.data.float()
 
     dataset = BigToMRecursiveDataset(args.data, tok, max_ctx_len=args.max_ctx_len)
-    loader = DataLoader(
-        dataset, batch_size=args.batch_size, shuffle=True,
-        collate_fn=lambda b: collate(b, pad_id=tok.pad_token_id),
-        num_workers=2, drop_last=True,
-    )
+    batches_per_epoch = len(dataset) // args.batch_size
 
-    total_steps = max(1, (len(loader) // args.grad_accum) * args.epochs)
+    def make_loader(indices: List[int]) -> DataLoader:
+        # A private generator keeps worker seeding off the global RNG stream.
+        return DataLoader(
+            dataset, batch_size=args.batch_size, sampler=indices,
+            collate_fn=lambda b: collate(b, pad_id=tok.pad_token_id),
+            num_workers=2, drop_last=True, generator=torch.Generator(),
+        )
+
+    total_steps = max(1, (batches_per_epoch // args.grad_accum) * args.epochs)
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
         lr=args.lr, weight_decay=0.01,
@@ -620,7 +654,7 @@ def main():
 
     os.makedirs(args.out, exist_ok=True)
     print(
-        f"Training setup: samples={len(dataset)} batches_per_epoch={len(loader)} "
+        f"Training setup: samples={len(dataset)} batches_per_epoch={batches_per_epoch} "
         f"total_optimizer_steps={total_steps} grad_accum={args.grad_accum}",
         flush=True,
     )
@@ -662,17 +696,102 @@ def main():
     best_metric = None
     best_step = None
     global_step = 0
+    start_epoch = 0
+    start_batch = 0
+    resumed_epoch_window = []
+
+    def save_resume_state(epoch: int, next_batch: int, epoch_window):
+        """Atomically refresh <out>/last with everything needed to continue.
+
+        Saved right after an optimizer step (or at the end of an epoch), so no
+        partial gradient accumulation is pending except the epoch's trailing
+        remainder batches, which a resume from an epoch boundary drops.
+        """
+        out = Path(args.out)
+        tmp, final, old = out / f"{RESUME_DIR}.tmp", out / RESUME_DIR, out / f"{RESUME_DIR}.old"
+        if tmp.exists():
+            shutil.rmtree(tmp)
+        save_heads(tmp, epoch, global_step, "resume", {}, best_metric, best_step)
+        torch.save(
+            {
+                "args": vars(args),
+                "epoch": epoch,
+                "next_batch": next_batch,
+                "global_step": global_step,
+                "best_metric": best_metric,
+                "best_step": best_step,
+                "epoch_window": epoch_window,
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "rng": {
+                    "python": random.getstate(),
+                    "torch": torch.get_rng_state(),
+                    "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
+                },
+            },
+            tmp / "trainer_state.pt",
+        )
+        if old.exists():
+            shutil.rmtree(old)
+        if final.exists():
+            final.rename(old)
+        tmp.rename(final)
+        if old.exists():
+            shutil.rmtree(old)
+
+    if args.resume:
+        resume_dir = find_resume_dir(Path(args.out))
+        if resume_dir is None:
+            raise FileNotFoundError(
+                f"--resume was given but {Path(args.out) / RESUME_DIR} has no trainer_state.pt."
+            )
+        state = torch.load(resume_dir / "trainer_state.pt", map_location="cpu", weights_only=False)
+        changed = {
+            k: (state["args"].get(k), getattr(args, k))
+            for k in RESUME_INVARIANT_ARGS if state["args"].get(k) != getattr(args, k)
+        }
+        if changed:
+            raise ValueError(f"Cannot resume with different training arguments: {changed}")
+        heads = torch.load(resume_dir / "heads.pt", map_location="cpu", weights_only=False)["state_dict"]
+        missing, unexpected = model.load_state_dict(heads, strict=False)
+        missing_heads = [k for k in missing if not k.startswith(("base_model.", "transformer."))]
+        if missing_heads or unexpected:
+            raise RuntimeError(f"Resume heads mismatch: missing={missing_heads[:5]} unexpected={unexpected[:5]}")
+        lora_result = set_peft_model_state_dict(
+            model.base_model, load_file(str(resume_dir / "lora" / "adapter_model.safetensors")),
+        )
+        if lora_result.unexpected_keys:
+            raise RuntimeError(f"Resume LoRA mismatch: unexpected={lora_result.unexpected_keys[:5]}")
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        global_step = state["global_step"]
+        best_metric, best_step = state["best_metric"], state["best_step"]
+        start_epoch, start_batch = state["epoch"], state["next_batch"]
+        resumed_epoch_window = state["epoch_window"]
+        random.setstate(state["rng"]["python"])
+        torch.set_rng_state(state["rng"]["torch"])
+        if state["rng"]["cuda"] is not None and torch.cuda.is_available():
+            torch.cuda.set_rng_state_all(state["rng"]["cuda"])
+        print(
+            f"Resumed from {resume_dir}: global_step={global_step} "
+            f"epoch={start_epoch} next_batch={start_batch}",
+            flush=True,
+        )
+
     train_start = time.time()
     optimizer.zero_grad(set_to_none=True)
 
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         print(f"Starting epoch {epoch + 1}/{args.epochs}", flush=True)
         model.train()
         log_window = []
         accum_window = []
-        epoch_window = []
+        first_batch = start_batch if epoch == start_epoch else 0
+        epoch_window = resumed_epoch_window if epoch == start_epoch else []
+        order = epoch_order(len(dataset), args.seed, epoch)
+        loader = make_loader(order[first_batch * args.batch_size:])
 
-        for i, batch in enumerate(loader):
+        for i, batch in enumerate(loader, start=first_batch):
             stop_grad_z1 = global_step < args.z1_stop_grad_steps
             loss, metrics = compute_loss(
                 model, batch, device,
@@ -736,6 +855,7 @@ def main():
                         best_metric, best_step, str(ckpt),
                     )
                     print(f"Updated best checkpoint: {best_dir} (total={metric:.4f})", flush=True)
+                save_resume_state(epoch, i + 1, epoch_window)
 
         epoch_metrics = avg_metrics(epoch_window)
         ckpt = Path(args.out) / f"epoch_{epoch}"
@@ -756,6 +876,7 @@ def main():
                 best_metric, best_step, str(ckpt),
             )
             print(f"Updated best checkpoint: {best_dir} (total={metric:.4f})", flush=True)
+        save_resume_state(epoch + 1, 0, [])
 
 
 if __name__ == "__main__":
