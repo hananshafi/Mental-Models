@@ -9,8 +9,6 @@ Sotopia-style training pipeline for MMRole:
   Stage 2 -> THIS FILE                          (GRPO on frozen reward)
   Stage 3 -> stage3_dpo_contrastive.py          (contrastive DPO pairs)
 
-This script is the learned-reward replacement for
-stage2_grpo_tom_reward.py (which uses a rule-based composite reward).
 It consumes a frozen Stage 0 checkpoint that scores policy candidates
 through the recursive ToM VAE (z1/z2 + joint/z-only ensemble).
 

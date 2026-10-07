@@ -696,8 +696,9 @@ def train(args):
     print(f"  Output: {args.output_dir}", flush=True)
     print(f"{'='*60}", flush=True)
     print(f"\nNext: Stage 2 GRPO", flush=True)
-    print(f"  python stage2_grpo_tom_reward.py \\", flush=True)
+    print(f"  python stage2_grpo_learned_reward.py \\", flush=True)
     print(f"    --sft_checkpoint {os.path.join(args.output_dir, 'best')} \\", flush=True)
+    print(f"    --reward_checkpoint_dir <stage0_best> \\", flush=True)
     print(f"    --base_model {args.base_model}", flush=True)
 
     # Cleanup

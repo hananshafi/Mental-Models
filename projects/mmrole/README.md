@@ -64,9 +64,7 @@ CUDA_VISIBLE_DEVICES=0 python projects/mmrole/scripts/stage1_sft_visual_tom.py \
   --gpu 0
 ```
 
-Omit `--mental_prefix_checkpoint_dir` for the plain SFT control. The
-LLaVA-NeXT/Mistral variant is in
-`stage1_sft_visual_tom_llava_next_mistral.py`.
+Omit `--mental_prefix_checkpoint_dir` for the plain SFT control.
 
 ## 4. GRPO with the learned reward
 
@@ -79,10 +77,6 @@ CUDA_VISIBLE_DEVICES=0,1,2 python \
   --output_dir projects/mmrole/checkpoints/stage2_grpo \
   --gpu 0,1,2
 ```
-
-`stage2_grpo_tom_reward.py` is the structured hand-designed reward baseline;
-`stage2_grpo_learned_reward_llava_next_qwen_reward.py` is the cross-backbone
-variant.
 
 ## 5. Optional contrastive DPO
 
