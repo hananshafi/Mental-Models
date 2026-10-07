@@ -46,6 +46,18 @@ from model_utils import (
     resolve_image, load_and_resize_image,
     prepare_generation_inputs,
 )
+from resume_state import (
+    check_resume_args, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "base_model", "model_type", "sft_checkpoint", "reward_base_model",
+    "reward_checkpoint_dir", "train_path", "image_dir", "max_examples",
+    "num_iterations", "prompts_per_iter", "group_size", "max_gen_len", "lr",
+    "kl_coeff", "clip_eps", "lora_r", "lora_alpha", "seed",
+)
 
 # Stage 0 reward architecture is re-used from the reward training script
 from stage0_reward_model_visual_tom import (
@@ -1248,17 +1260,41 @@ def train(args):
 
     best_reward = -float("inf")
     patience_counter = 0
-    start_time = time.time()
+    start_iteration = 1
     log_path = os.path.join(args.output_dir, "training_log.jsonl")
-    if os.path.exists(log_path):
-        print(
-            f"  Overwriting existing training log at {log_path} "
-            "(Stage 2 does not resume from prior JSONL history).",
-            flush=True,
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        load_lora_weights(policy_model, os.path.join(resume_dir, "policy"))
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        best_reward, patience_counter = state["best_reward"], state["patience_counter"]
+        start_iteration = (
+            args.num_iterations + 1 if state["stopped_early"] else state["next_iteration"]
         )
-    log_file = open(log_path, "w")
+        restore_rng_state(state["rng"])
+        print(f"  Resumed from {resume_dir} at iteration {start_iteration}", flush=True)
+        log_file = open(log_path, "a")
+    else:
+        if os.path.exists(log_path):
+            print(f"  Overwriting existing training log at {log_path}.", flush=True)
+        log_file = open(log_path, "w")
 
-    for iteration in range(1, args.num_iterations + 1):
+    def save_resume(next_iteration, stopped_early):
+        save_resume_dir(
+            args.output_dir,
+            lambda d: policy_model.save_pretrained(os.path.join(d, "policy")),
+            {
+                "args": vars(args), "next_iteration": next_iteration,
+                "stopped_early": stopped_early, "best_reward": best_reward,
+                "patience_counter": patience_counter,
+                "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+            },
+        )
+
+    start_time = time.time()
+    for iteration in range(start_iteration, args.num_iterations + 1):
         batch_indices = random.sample(
             range(len(dataset)), min(args.prompts_per_iter, len(dataset)),
         )
@@ -1298,7 +1334,13 @@ def train(args):
             ckpt_dir = os.path.join(args.output_dir, f"iter_{iteration}")
             policy_model.save_pretrained(ckpt_dir)
 
-        if args.patience > 0 and patience_counter >= args.patience:
+        stop = args.patience > 0 and patience_counter >= args.patience
+        if args.resume_every > 0 and (
+            iteration % args.resume_every == 0 or stop or iteration == args.num_iterations
+        ):
+            log_file.flush()
+            save_resume(iteration + 1, stop)
+        if stop:
             print(f"\n  Early stopping: no improvement for {args.patience} iters",
                   flush=True)
             break
@@ -1396,6 +1438,10 @@ def main():
     parser.add_argument("--output_dir", type=str,
                         default="projects/mmrole/checkpoints/stage2_grpo_llava_next_qwen_reward")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=10,
+                        help="Refresh <output_dir>/last every N iterations.")
     parser.add_argument("--gpu", type=str, default="")
     parser.add_argument("--policy_device", type=str, default="",
                         help="Explicit policy device (e.g. cuda:0). "

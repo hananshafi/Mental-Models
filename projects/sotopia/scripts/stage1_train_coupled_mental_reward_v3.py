@@ -36,6 +36,7 @@ Loss = L_preference + L_reward_regression + L_z_only_reward (anti-bypass)
 """
 
 import os
+import sys
 import json
 import gc
 import math
@@ -49,6 +50,12 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, random_split
 from transformers import AutoTokenizer, AutoModelForCausalLM, get_cosine_schedule_with_warmup
 from peft import LoraConfig, get_peft_model
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from resume_state import (  # noqa: E402
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Constants
@@ -950,13 +957,20 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, epoch,
                 kl_anneal_steps=200, z2_kl_delay_steps=100,
                 z2_warmup_steps=100,
                 global_step_offset=0,
-                max_grad_norm=5.0):
+                max_grad_norm=5.0,
+                start_batch=0,
+                totals=None,
+                on_optimizer_step=None):
     """
     Training epoch with recursive z support.
 
     z2_kl_delay_steps: z2's KL annealing starts this many steps AFTER z1's
     z2_warmup_steps: stop-gradient on z1→z2 for this many steps (lets z1
         stabilize before z2 learns from it)
+    start_batch / totals: resume mid-epoch; dataloader then yields only the
+        remaining batches and totals carries the running loss sums.
+    on_optimizer_step: called as (next_batch, opt_step, totals) after each
+        optimizer step, e.g. to save resume state.
     """
     model.train()
     total_loss = 0.0
@@ -965,10 +979,13 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, epoch,
         "kl1": 0, "kl2": 0, "future": 0,
         "mental1_gen": 0, "mental2_gen": 0, "expl_reward": 0,
     }
+    if totals is not None:
+        total_loss = totals["loss"]
+        metrics.update(totals["metrics"])
     step = 0
-    num_batches = len(dataloader)
+    num_batches = start_batch + len(dataloader)
 
-    for batch_idx, batch in enumerate(dataloader):
+    for batch_idx, batch in enumerate(dataloader, start=start_batch):
         ctx_ids = batch["ctx_input_ids"].to(device)
         ctx_mask = batch["ctx_attention_mask"].to(device)
         pos_ids = batch["pos_input_ids"].to(device)
@@ -1013,7 +1030,8 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, epoch,
 
         loss.backward()
 
-        if (batch_idx + 1) % grad_accum_steps == 0:
+        stepped = (batch_idx + 1) % grad_accum_steps == 0
+        if stepped:
             torch.nn.utils.clip_grad_norm_(
                 [p for p in model.parameters() if p.requires_grad], max_norm=max_grad_norm)
             optimizer.step()
@@ -1024,6 +1042,11 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, epoch,
         total_loss += raw_loss.item()
         for key, value in batch_metrics.items():
             metrics[key] += value
+        if stepped and on_optimizer_step is not None:
+            on_optimizer_step(
+                batch_idx + 1, current_opt_step,
+                {"loss": total_loss, "metrics": dict(metrics)},
+            )
 
         if (batch_idx + 1) % 10 == 0:
             n = batch_idx + 1
@@ -1041,7 +1064,7 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, epoch,
                 f"lr={scheduler.get_last_lr()[0]:.2e} {sg}"
             )
 
-    n = len(dataloader)
+    n = num_batches
     for k in metrics:
         metrics[k] /= n
     final_global_step = global_step_offset + num_batches // grad_accum_steps
@@ -1120,12 +1143,24 @@ CUSTOM_HEAD_NAMES = [
 ]
 
 
-def _save_checkpoint(model, save_dir):
+def _write_weights(model, save_dir):
     os.makedirs(save_dir, exist_ok=True)
     model.base_model.save_pretrained(os.path.join(save_dir, "lora_adapter"))
     for head_name in CUSTOM_HEAD_NAMES:
         head = getattr(model, head_name)
         torch.save(head.state_dict(), os.path.join(save_dir, f"{head_name}.pth"))
+
+
+def _save_checkpoint(model, save_dir):
+    _write_weights(model, save_dir)
+
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "model_name", "data_path", "batch_size", "grad_accum_steps", "num_epochs", "lr",
+    "max_ctx_len", "max_resp_len", "z_dim", "lora_r", "lora_alpha", "num_lora_layers",
+    "val_ratio", "seed",
+)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1176,6 +1211,10 @@ def main():
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--gpu", type=str, default="7")
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=100,
+                        help="Refresh <output_dir>/last every N optimizer steps (and every epoch).")
     args = parser.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -1233,8 +1272,15 @@ def main():
     total_count = sum(p.numel() for p in model.parameters())
     print(f"Trainable: {trainable_count:,} / {total_count:,} ({100*trainable_count/total_count:.2f}%)")
 
-    # ── Mental Pre-Warmup (optional, z1 only) ──
-    if args.mental_prewarm_data:
+    resume_state = None
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        resume_state = load_resume_state(resume_dir)
+        check_resume_args(resume_state["args"], args, RESUME_INVARIANT_ARGS)
+        print(f"Resuming from {resume_dir}", flush=True)
+
+    # ── Mental Pre-Warmup (optional, z1 only; its effect is in the resumed weights) ──
+    if args.mental_prewarm_data and resume_state is None:
         prewarm_dataset = MentalPrewarmDataset(
             args.mental_prewarm_data, tokenizer, max_ctx_len=args.max_ctx_len,
         )
@@ -1265,12 +1311,17 @@ def main():
     else:
         print(f"Dataset split: train={len(dataset)}, val=0 (validation disabled)")
 
-    train_dataloader = DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True,
-        collate_fn=lambda b: collate_fn(b, tokenizer),
-        num_workers=args.num_workers, pin_memory=True,
-        persistent_workers=args.num_workers > 0,
-    )
+    def make_train_loader(indices):
+        # Deterministic per-epoch order (see epoch_order) makes mid-epoch resume exact;
+        # the private generator keeps worker seeding off the global RNG stream.
+        return DataLoader(
+            train_dataset, batch_size=args.batch_size, sampler=indices,
+            collate_fn=lambda b: collate_fn(b, tokenizer),
+            num_workers=args.num_workers, pin_memory=True,
+            generator=torch.Generator(),
+        )
+
+    batches_per_epoch = math.ceil(len(train_dataset) / args.batch_size)
     val_dataloader = None
     if val_dataset is not None:
         val_dataloader = DataLoader(
@@ -1278,6 +1329,7 @@ def main():
             collate_fn=lambda b: collate_fn(b, tokenizer),
             num_workers=args.num_workers, pin_memory=True,
             persistent_workers=args.num_workers > 0,
+            generator=torch.Generator(),
         )
 
     # ── Optimizer + Scheduler ──
@@ -1298,14 +1350,49 @@ def main():
         {"params": lora_params, "lr": args.lr, "weight_decay": 0.01},
         {"params": head_params, "lr": head_lr, "weight_decay": 0.01},
     ])
-    total_steps = len(train_dataloader) * args.num_epochs // args.grad_accum_steps
+    total_steps = batches_per_epoch * args.num_epochs // args.grad_accum_steps
     warmup_steps = int(total_steps * args.warmup_ratio)
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_steps, total_steps)
 
     # ── Training ──
     best_metric = float("inf")
     global_step = 0
-    for epoch in range(args.num_epochs):
+    start_epoch, start_batch, epoch_start_step, epoch_totals = 0, 0, 0, None
+    if resume_state is not None:
+        for head_name in CUSTOM_HEAD_NAMES:
+            getattr(model, head_name).load_state_dict(torch.load(
+                os.path.join(resume_dir, f"{head_name}.pth"), map_location=device, weights_only=True,
+            ))
+        load_lora_weights(model.base_model, os.path.join(resume_dir, "lora_adapter"))
+        optimizer.load_state_dict(resume_state["optimizer"])
+        scheduler.load_state_dict(resume_state["scheduler"])
+        best_metric = resume_state["best_metric"]
+        global_step = resume_state["global_step"]
+        start_epoch, start_batch = resume_state["epoch"], resume_state["next_batch"]
+        epoch_start_step, epoch_totals = resume_state["epoch_start_step"], resume_state["totals"]
+        restore_rng_state(resume_state["rng"])
+        print(f"Resumed at epoch {start_epoch}, batch {start_batch}, step {global_step}", flush=True)
+
+    def save_resume(epoch, next_batch, epoch_start, step, totals):
+        save_resume_dir(args.output_dir, lambda d: _write_weights(model, str(d)), {
+            "args": vars(args), "epoch": epoch, "next_batch": next_batch,
+            "epoch_start_step": epoch_start, "global_step": step, "totals": totals,
+            "best_metric": best_metric,
+            "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+        })
+
+    for epoch in range(start_epoch, args.num_epochs):
+        first_batch = start_batch if epoch == start_epoch else 0
+        totals = epoch_totals if epoch == start_epoch else None
+        epoch_offset = epoch_start_step if epoch == start_epoch else global_step
+        train_dataloader = make_train_loader(
+            epoch_order(len(train_dataset), args.seed, epoch)[first_batch * args.batch_size:]
+        )
+
+        def on_optimizer_step(next_batch, opt_step, running, epoch=epoch, epoch_offset=epoch_offset):
+            if args.resume_every > 0 and opt_step % args.resume_every == 0:
+                save_resume(epoch, next_batch, epoch_offset, opt_step, running)
+
         avg_loss, metrics, global_step = train_epoch(
             model, train_dataloader, optimizer, scheduler, device, epoch,
             kl_weight=args.kl_weight, future_weight=args.future_weight,
@@ -1315,8 +1402,11 @@ def main():
             kl_anneal_steps=args.kl_anneal_steps,
             z2_kl_delay_steps=args.z2_kl_delay_steps,
             z2_warmup_steps=args.z2_warmup_steps,
-            global_step_offset=global_step,
+            global_step_offset=epoch_offset,
             max_grad_norm=args.max_grad_norm,
+            start_batch=first_batch,
+            totals=totals,
+            on_optimizer_step=on_optimizer_step,
         )
         print(f"\nEpoch {epoch+1}/{args.num_epochs}: avg_loss={avg_loss:.4f}")
         for k, v in metrics.items():
@@ -1347,6 +1437,7 @@ def main():
             best_dir = os.path.join(args.output_dir, "best")
             _save_checkpoint(model, best_dir)
             print(f"  -> Best model saved ({monitor_name}={best_metric:.4f})")
+        save_resume(epoch + 1, 0, global_step, global_step, None)
 
         gc.collect()
         torch.cuda.empty_cache()

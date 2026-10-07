@@ -38,6 +38,17 @@ from stage2_policy_sft import (
     load_stage1_encoder,
 )
 from stage1_train_mental_reward import build_encoder_context
+from resume_state import (
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "data", "base_model", "stage1_ckpt", "stage2_ckpt", "z_dim", "epochs",
+    "prompts_per_step", "group_size", "max_gen_len", "lr", "kl_coeff", "clip_eps",
+    "temperature", "top_p", "max_steps", "seed",
+)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -439,6 +450,10 @@ def main():
     ap.add_argument("--max_steps", type=int, default=300)
     ap.add_argument("--save_every", type=int, default=100)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--resume", action="store_true",
+                    help="Continue from <out>/last after an interruption.")
+    ap.add_argument("--resume_every", type=int, default=10,
+                    help="Refresh <out>/last every N GRPO steps.")
     args = ap.parse_args()
 
     random.seed(args.seed)
@@ -474,10 +489,14 @@ def main():
     ref = _load_ref_policy(args.base_model, Path(args.stage2_ckpt), ref_device)
 
     dataset = GRPOPromptDataset(args.data)
-    loader = DataLoader(
-        dataset, batch_size=args.prompts_per_step, shuffle=True,
-        collate_fn=lambda batch: batch,
-    )
+
+    def make_loader(indices):
+        # Deterministic per-epoch order (epoch_order) makes mid-epoch resume exact.
+        # The private generator keeps loader seeding off the global RNG stream.
+        return DataLoader(
+            dataset, batch_size=args.prompts_per_step, sampler=indices,
+            collate_fn=lambda batch: batch, generator=torch.Generator(),
+        )
 
     trainable = [p for p in policy.parameters() if p.requires_grad] + \
                 [p for p in projector.parameters() if p.requires_grad]
@@ -504,9 +523,36 @@ def main():
     )
 
     os.makedirs(args.out, exist_ok=True)
+
+    def write_weights(directory):
+        policy.save_pretrained(directory / "policy_lora")
+        torch.save({"projector": projector.state_dict()}, directory / "projector.pt")
+
     step = 0
-    for epoch in range(args.epochs):
-        for batch_samples in loader:
+    start_epoch, start_batch = 0, 0
+    if args.resume:
+        resume_dir = require_resume_dir(args.out)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        load_lora_weights(policy, resume_dir / "policy_lora")
+        projector.load_state_dict(
+            torch.load(resume_dir / "projector.pt", map_location=policy_device)["projector"]
+        )
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        step, start_epoch, start_batch = state["step"], state["epoch"], state["next_batch"]
+        restore_rng_state(state["rng"])
+        print(f"Resumed from {resume_dir}: step={step} epoch={start_epoch} "
+              f"batch={start_batch}", flush=True)
+
+    for epoch in range(start_epoch, args.epochs):
+        if step >= args.max_steps:
+            break
+        first_batch = start_batch if epoch == start_epoch else 0
+        loader = make_loader(
+            epoch_order(len(dataset), args.seed, epoch)[first_batch * args.prompts_per_step:]
+        )
+        for batch_index, batch_samples in enumerate(loader, start=first_batch):
             metrics = trainer.step(batch_samples, optimizer, scheduler)
             step += 1
             print(
@@ -524,10 +570,14 @@ def main():
                     ckpt / "projector.pt",
                 )
                 print(f"Saved {ckpt}")
+            if args.resume_every > 0 and (step % args.resume_every == 0 or step >= args.max_steps):
+                save_resume_dir(args.out, write_weights, {
+                    "args": vars(args), "step": step, "epoch": epoch,
+                    "next_batch": batch_index + 1,
+                    "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+                })
             if step >= args.max_steps:
                 break
-        if step >= args.max_steps:
-            break
 
 
 if __name__ == "__main__":

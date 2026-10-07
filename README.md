@@ -228,6 +228,13 @@ above. Training uses the released annotations and runs locally; an
 `OPENAI_API_KEY` is needed only to regenerate annotations or for LLM-judged
 evaluation.
 
+Every training script can resume after an interruption. It refreshes
+`<output_dir>/last/` with the trainable weights, optimizer, scheduler, data
+position, and RNG state every `--resume_every` steps or iterations and at the
+end of each epoch (BigToM Stage 1 does so at each `--save_every_steps`
+checkpoint). Rerun the same command with `--resume` to continue exactly where
+the last save left off.
+
 Generated artifacts follow one convention:
 
 ```text

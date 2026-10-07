@@ -61,6 +61,18 @@ from model_utils import (
     build_full_chat_text, compute_prompt_length,
     tokenize_batch, create_labels, default_lora_target_modules,
 )
+from resume_state import (
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "base_model", "model_type", "grpo_checkpoint", "sft_checkpoint", "train_path",
+    "val_path", "image_dir", "violation_types", "max_examples", "beta",
+    "label_smoothing", "num_epochs", "batch_size", "grad_accum", "lr", "max_len",
+    "lora_rank", "lora_alpha", "seed",
+)
 
 print(">> All imports done.", flush=True)
 
@@ -326,6 +338,8 @@ def dpo_loss(policy_chosen_logps, policy_rejected_logps,
 def train(args):
     if args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     n_gpus = torch.cuda.device_count()
     print(f"Device: {device}, GPUs: {n_gpus}", flush=True)
@@ -419,21 +433,27 @@ def train(args):
         processor, model_type, args.image_dir, max_len=args.max_len
     )
 
-    train_loader = DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True,
-        collate_fn=collate_fn, num_workers=2, pin_memory=True, drop_last=True,
-    )
+    def make_train_loader(indices):
+        # Deterministic per-epoch order (epoch_order) makes mid-epoch resume exact.
+        return DataLoader(
+            train_dataset, batch_size=args.batch_size, sampler=indices,
+            collate_fn=collate_fn, num_workers=2, pin_memory=True, drop_last=True,
+            generator=torch.Generator(),
+        )
+
+    batches_per_epoch = len(train_dataset) // args.batch_size
     val_loader = None
     if val_dataset:
         val_loader = DataLoader(
             val_dataset, batch_size=args.batch_size, shuffle=False,
             collate_fn=collate_fn, num_workers=1,
+            generator=torch.Generator(),
         )
 
     # Optimizer + scheduler
     trainable_params = [p for p in policy_model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(trainable_params, lr=args.lr, weight_decay=args.weight_decay)
-    total_steps = (len(train_loader) * args.num_epochs) // args.grad_accum
+    total_steps = (batches_per_epoch * args.num_epochs) // args.grad_accum
     warmup_steps = int(0.05 * total_steps)
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_steps, total_steps)
 
@@ -460,22 +480,48 @@ def train(args):
     # Training
     best_val_accuracy = 0.0
     global_step = 0
+    start_epoch, start_batch, resumed_sums = 0, 0, None
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        load_lora_weights(policy_model, os.path.join(resume_dir, "policy"))
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        global_step, best_val_accuracy = state["global_step"], state["best_val_accuracy"]
+        start_epoch, start_batch, resumed_sums = state["epoch"], state["next_batch"], state["sums"]
+        restore_rng_state(state["rng"])
+        print(f"Resumed from {resume_dir}: epoch={start_epoch} batch={start_batch} "
+              f"step={global_step}", flush=True)
+
+    def save_resume(epoch, next_batch, sums):
+        save_resume_dir(args.output_dir, lambda d: policy_model.save_pretrained(os.path.join(d, "policy")), {
+            "args": config, "epoch": epoch, "next_batch": next_batch,
+            "global_step": global_step, "best_val_accuracy": best_val_accuracy, "sums": sums,
+            "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+        })
+
     start_time = time.time()
     log_file = open(os.path.join(args.output_dir, "training_log.jsonl"), "a")
     optimizer.zero_grad(set_to_none=True)
 
-    for epoch in range(args.num_epochs):
+    for epoch in range(start_epoch, args.num_epochs):
         policy_model.train()
-        epoch_loss = 0.0
-        epoch_accuracy = 0.0
-        epoch_margin = 0.0
-        epoch_steps = 0
-        skipped_nonfinite = 0
+        first_batch = start_batch if epoch == start_epoch else 0
+        sums = resumed_sums if epoch == start_epoch and resumed_sums else None
+        epoch_loss = sums["loss"] if sums else 0.0
+        epoch_accuracy = sums["accuracy"] if sums else 0.0
+        epoch_margin = sums["margin"] if sums else 0.0
+        epoch_steps = sums["steps"] if sums else 0
+        skipped_nonfinite = sums["skipped_nonfinite"] if sums else 0
 
         # Per-violation-type tracking
-        vtype_metrics = {}
+        vtype_metrics = sums["vtype_metrics"] if sums else {}
+        train_loader = make_train_loader(
+            epoch_order(len(train_dataset), args.seed, epoch)[first_batch * args.batch_size:]
+        )
 
-        for batch_idx, batch in enumerate(train_loader):
+        for batch_idx, batch in enumerate(train_loader, start=first_batch):
             chosen_inputs = batch["chosen"]
             rejected_inputs = batch["rejected"]
             vtypes = batch["violation_types"]
@@ -531,7 +577,8 @@ def train(args):
             loss = loss / args.grad_accum
             loss.backward()
 
-            if (batch_idx + 1) % args.grad_accum == 0:
+            stepped = (batch_idx + 1) % args.grad_accum == 0
+            if stepped:
                 torch.nn.utils.clip_grad_norm_(trainable_params, max_norm=1.0)
                 optimizer.step()
                 scheduler.step()
@@ -558,7 +605,7 @@ def train(args):
                 lr_now = scheduler.get_last_lr()[0]
                 print(
                     f"  Epoch {epoch+1}/{args.num_epochs} "
-                    f"Step {batch_idx+1}/{len(train_loader)} "
+                    f"Step {batch_idx+1}/{batches_per_epoch} "
                     f"(global {global_step}/{total_steps}) "
                     f"loss={avg_loss:.4f} acc={avg_acc:.3f} "
                     f"margin={avg_margin:.3f} lr={lr_now:.2e} "
@@ -572,6 +619,12 @@ def train(args):
                 print(f"  Saving checkpoint at step {global_step}...", flush=True)
                 policy_model.save_pretrained(ckpt_dir)
                 processor.save_pretrained(ckpt_dir)
+            if stepped and args.resume_every > 0 and global_step % args.resume_every == 0:
+                save_resume(epoch, batch_idx + 1, {
+                    "loss": epoch_loss, "accuracy": epoch_accuracy, "margin": epoch_margin,
+                    "steps": epoch_steps, "skipped_nonfinite": skipped_nonfinite,
+                    "vtype_metrics": vtype_metrics,
+                })
 
         # End of epoch
         avg_epoch_loss = epoch_loss / max(epoch_steps, 1)
@@ -653,6 +706,7 @@ def train(args):
         epoch_dir = os.path.join(args.output_dir, f"epoch_{epoch+1}")
         policy_model.save_pretrained(epoch_dir)
         processor.save_pretrained(epoch_dir)
+        save_resume(epoch + 1, 0, None)
 
     log_file.close()
 
@@ -720,6 +774,11 @@ def main():
     parser.add_argument("--save_every", type=int, default=200)
     parser.add_argument("--log_every", type=int, default=20)
     parser.add_argument("--gpu", type=str, default="")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=50,
+                        help="Refresh <output_dir>/last every N optimizer steps (and every epoch).")
     args = parser.parse_args()
 
     train(args)

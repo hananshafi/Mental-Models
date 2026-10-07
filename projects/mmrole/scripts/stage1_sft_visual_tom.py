@@ -60,6 +60,17 @@ from model_utils import (
     default_lora_target_modules,
 )
 from mental_prefix_utils import FrozenMentalPrefixModel
+from resume_state import (
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "base_model", "model_type", "train_path", "val_path", "salience_train_path",
+    "image_dir", "mental_prefix_checkpoint_dir", "num_epochs", "batch_size",
+    "grad_accum", "lr", "max_len", "max_examples", "lora_rank", "lora_alpha", "seed",
+)
 
 print(">> All imports done.", flush=True)
 
@@ -338,6 +349,8 @@ def train(args):
     # Setup device
     if args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     if device.type == "cuda":
         torch.cuda.set_device(device)
@@ -459,15 +472,20 @@ def train(args):
 
     collate_fn = create_collate_fn(processor, model_type, max_len=args.max_len)
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        collate_fn=collate_fn,
-        num_workers=2,
-        pin_memory=True,
-        drop_last=True,
-    )
+    def make_train_loader(indices):
+        # Deterministic per-epoch order (epoch_order) makes mid-epoch resume exact.
+        return DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            sampler=indices,
+            collate_fn=collate_fn,
+            num_workers=2,
+            pin_memory=True,
+            drop_last=True,
+            generator=torch.Generator(),
+        )
+
+    batches_per_epoch = len(train_dataset) // args.batch_size
     val_loader = None
     aux_val_loader = None
     if val_dataset:
@@ -477,6 +495,7 @@ def train(args):
             shuffle=False,
             collate_fn=collate_fn,
             num_workers=1,
+            generator=torch.Generator(),
         )
     if aux_val_dataset and len(aux_val_dataset) > 0:
         aux_val_loader = DataLoader(
@@ -485,6 +504,7 @@ def train(args):
             shuffle=False,
             collate_fn=collate_fn,
             num_workers=1,
+            generator=torch.Generator(),
         )
 
     # Optimizer and scheduler
@@ -492,7 +512,7 @@ def train(args):
     optimizer = torch.optim.AdamW(
         trainable_params, lr=args.lr, weight_decay=args.weight_decay
     )
-    steps_per_epoch = math.ceil(len(train_loader) / args.grad_accum)
+    steps_per_epoch = math.ceil(batches_per_epoch / args.grad_accum)
     total_steps = steps_per_epoch * args.num_epochs
     warmup_steps = int(0.05 * total_steps)
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_steps, total_steps)
@@ -527,16 +547,42 @@ def train(args):
     # Training
     best_val_loss = float("inf")
     global_step = 0
+    start_epoch, start_batch, resumed_epoch_loss = 0, 0, (0.0, 0)
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        load_lora_weights(model, os.path.join(resume_dir, "adapter"))
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        global_step, best_val_loss = state["global_step"], state["best_val_loss"]
+        start_epoch, start_batch = state["epoch"], state["next_batch"]
+        resumed_epoch_loss = tuple(state["epoch_loss"])
+        restore_rng_state(state["rng"])
+        print(f"Resumed from {resume_dir}: epoch={start_epoch} batch={start_batch} "
+              f"step={global_step}", flush=True)
+
+    def save_resume(epoch, next_batch, epoch_loss_state):
+        save_resume_dir(args.output_dir, lambda d: model.save_pretrained(os.path.join(d, "adapter")), {
+            "args": config, "epoch": epoch, "next_batch": next_batch,
+            "global_step": global_step, "epoch_loss": epoch_loss_state,
+            "best_val_loss": best_val_loss,
+            "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+        })
+
     start_time = time.time()
 
-    for epoch in range(args.num_epochs):
+    for epoch in range(start_epoch, args.num_epochs):
         model.train()
-        epoch_loss = 0.0
-        epoch_steps = 0
+        first_batch = start_batch if epoch == start_epoch else 0
+        epoch_loss, epoch_steps = resumed_epoch_loss if epoch == start_epoch else (0.0, 0)
         micro_in_accum = 0
         optimizer.zero_grad(set_to_none=True)
+        train_loader = make_train_loader(
+            epoch_order(len(train_dataset), args.seed, epoch)[first_batch * args.batch_size:]
+        )
 
-        for batch_idx, batch in enumerate(train_loader):
+        for batch_idx, batch in enumerate(train_loader, start=first_batch):
             # Move to device
             batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                      for k, v in batch.items()}
@@ -548,8 +594,9 @@ def train(args):
             loss.backward()
             micro_in_accum += 1
 
-            is_last_batch = (batch_idx + 1) == len(train_loader)
-            if micro_in_accum == args.grad_accum or is_last_batch:
+            is_last_batch = (batch_idx + 1) == batches_per_epoch
+            stepped = micro_in_accum == args.grad_accum or is_last_batch
+            if stepped:
                 if micro_in_accum < args.grad_accum:
                     grad_rescale = args.grad_accum / micro_in_accum
                     for p in trainable_params:
@@ -571,7 +618,7 @@ def train(args):
                 lr_now = scheduler.get_last_lr()[0]
                 print(
                     f"  Epoch {epoch+1}/{args.num_epochs} "
-                    f"Step {batch_idx+1}/{len(train_loader)} "
+                    f"Step {batch_idx+1}/{batches_per_epoch} "
                     f"(global {global_step}/{total_steps}) "
                     f"loss={avg_loss:.4f} lr={lr_now:.2e} "
                     f"time={elapsed:.0f}s",
@@ -584,6 +631,9 @@ def train(args):
                 print(f"  Saving checkpoint at step {global_step}...", flush=True)
                 model.save_pretrained(ckpt_dir)
                 processor.save_pretrained(ckpt_dir)
+            if (stepped and not is_last_batch and args.resume_every > 0
+                    and global_step % args.resume_every == 0):
+                save_resume(epoch, batch_idx + 1, (epoch_loss, epoch_steps))
 
         # End of epoch
         avg_epoch_loss = epoch_loss / max(epoch_steps, 1)
@@ -631,6 +681,7 @@ def train(args):
         epoch_dir = os.path.join(args.output_dir, f"epoch_{epoch+1}")
         model.save_pretrained(epoch_dir)
         processor.save_pretrained(epoch_dir)
+        save_resume(epoch + 1, 0, (0.0, 0))
 
     # Final save
     final_dir = os.path.join(args.output_dir, "final")
@@ -708,6 +759,11 @@ def main():
                         help="Save checkpoint every N global steps (0=disable)")
     parser.add_argument("--log_every", type=int, default=20)
     parser.add_argument("--gpu", type=str, default="")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=50,
+                        help="Refresh <output_dir>/last every N optimizer steps (and every epoch).")
     args = parser.parse_args()
 
     train(args)

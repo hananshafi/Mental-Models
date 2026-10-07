@@ -36,6 +36,16 @@ from stage1_train_mental_reward import (
     build_task_context,
     get_transformer_from_peft,
 )
+from resume_state import (
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "data", "base_model", "stage1_ckpt", "z_dim", "epochs", "batch_size", "grad_accum",
+    "lr", "projector_lr", "lora_r", "lora_alpha", "max_ctx_len", "max_total_len", "seed",
+)
 
 
 MENTAL_PREFIX_LEN = 16  # total slots; split 8/8 between z1 and z2
@@ -303,6 +313,10 @@ def main():
     ap.add_argument("--max_ctx_len", type=int, default=768)
     ap.add_argument("--max_total_len", type=int, default=1280)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--resume", action="store_true",
+                    help="Continue from <out>/last after an interruption.")
+    ap.add_argument("--resume_every", type=int, default=100,
+                    help="Refresh <out>/last every N optimizer steps (and every epoch).")
     args = ap.parse_args()
 
     random.seed(args.seed)
@@ -345,11 +359,15 @@ def main():
     dataset = BigToMSFTDataset(
         args.data, tok, max_ctx_len=args.max_ctx_len, max_total_len=args.max_total_len,
     )
-    loader = DataLoader(
-        dataset, batch_size=args.batch_size, shuffle=True,
-        collate_fn=lambda batch: collate(batch, pad_id=tok.pad_token_id),
-        num_workers=2, drop_last=True,
-    )
+    batches_per_epoch = len(dataset) // args.batch_size
+
+    def make_loader(indices):
+        # Deterministic per-epoch order (epoch_order) makes mid-epoch resume exact.
+        return DataLoader(
+            dataset, batch_size=args.batch_size, sampler=indices,
+            collate_fn=lambda batch: collate(batch, pad_id=tok.pad_token_id),
+            num_workers=2, drop_last=True, generator=torch.Generator(),
+        )
 
     policy_params = [p for p in policy.parameters() if p.requires_grad]
     projector_params = list(projector.parameters())
@@ -360,22 +378,54 @@ def main():
         ],
         weight_decay=0.01,
     )
-    total_steps = max(1, (len(loader) // args.grad_accum) * args.epochs)
+    total_steps = max(1, (batches_per_epoch // args.grad_accum) * args.epochs)
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, int(0.1 * total_steps), total_steps,
     )
 
     os.makedirs(args.out, exist_ok=True)
 
+    def write_weights(directory):
+        policy.save_pretrained(directory / "policy_lora")
+        torch.save({"projector": projector.state_dict()}, directory / "projector.pt")
+
+    def save_resume(epoch, next_batch, running):
+        save_resume_dir(args.out, write_weights, {
+            "args": vars(args), "epoch": epoch, "next_batch": next_batch,
+            "global_step": global_step, "running": running,
+            "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+        })
+
     global_step = 0
-    for epoch in range(args.epochs):
+    start_epoch, start_batch, resumed_running = 0, 0, (0.0, 0)
+    if args.resume:
+        resume_dir = require_resume_dir(args.out)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        load_lora_weights(policy, resume_dir / "policy_lora")
+        projector.load_state_dict(
+            torch.load(resume_dir / "projector.pt", map_location=policy_device)["projector"]
+        )
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        global_step = state["global_step"]
+        start_epoch, start_batch = state["epoch"], state["next_batch"]
+        resumed_running = tuple(state["running"])
+        restore_rng_state(state["rng"])
+        print(f"Resumed from {resume_dir}: epoch={start_epoch} batch={start_batch} "
+              f"step={global_step}", flush=True)
+
+    for epoch in range(start_epoch, args.epochs):
         policy.train()
         projector.train()
-        running_loss = 0.0
-        running_n = 0
+        first_batch = start_batch if epoch == start_epoch else 0
+        running_loss, running_n = resumed_running if epoch == start_epoch else (0.0, 0)
         optimizer.zero_grad(set_to_none=True)
+        loader = make_loader(
+            epoch_order(len(dataset), args.seed, epoch)[first_batch * args.batch_size:]
+        )
 
-        for i, batch in enumerate(loader):
+        for i, batch in enumerate(loader, start=first_batch):
             with torch.no_grad():
                 mu1, mu2 = encoder.encode_z1_z2_deterministic(
                     batch["ctx_ids"].to(encoder_device),
@@ -398,7 +448,8 @@ def main():
             running_loss += loss.item()
             running_n += 1
 
-            if (i + 1) % args.grad_accum == 0:
+            stepped = (i + 1) % args.grad_accum == 0
+            if stepped:
                 torch.nn.utils.clip_grad_norm_(policy_params + projector_params, 1.0)
                 optimizer.step()
                 scheduler.step()
@@ -413,6 +464,8 @@ def main():
                 )
                 running_loss = 0.0
                 running_n = 0
+            if stepped and args.resume_every > 0 and global_step % args.resume_every == 0:
+                save_resume(epoch, i + 1, (running_loss, running_n))
 
         ckpt = Path(args.out) / f"epoch_{epoch}"
         ckpt.mkdir(parents=True, exist_ok=True)
@@ -423,6 +476,7 @@ def main():
             ckpt / "projector.pt",
         )
         print(f"Saved epoch {epoch} to {ckpt}")
+        save_resume(epoch + 1, 0, (0.0, 0))
 
 
 if __name__ == "__main__":

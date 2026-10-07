@@ -77,6 +77,10 @@ from model_utils import (
     detect_model_type, load_base_model, get_tokenizer,
     resolve_image, load_and_resize_image, default_lora_target_modules,
 )
+from resume_state import (
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, rng_state, save_resume_dir,
+)
 
 print(">> All imports done.", flush=True)
 
@@ -1042,16 +1046,22 @@ def train_epoch(model, loader, optimizer, scheduler, device, epoch,
                 kl_anneal_steps=200, z2_kl_delay_steps=100, z2_warmup_steps=100,
                 grad_accum=1, global_step_offset=0, max_grad_norm=5.0,
                 world_size: int = 1, is_main_process: bool = True,
-                save_every_steps: int = 0, on_checkpoint_step=None):
+                save_every_steps: int = 0, on_checkpoint_step=None,
+                start_batch: int = 0, metric_sums=None, on_optimizer_step=None):
+    """One epoch. start_batch/metric_sums resume mid-epoch (loader then yields only
+    the remaining batches); on_optimizer_step(next_batch, opt_step, sums) runs after
+    each optimizer step and any checkpoint at that step."""
     model.train()
     metrics = {
         "loss": 0.0, "pref": 0.0, "reward_reg": 0.0, "z1_only": 0.0,
         "z_comb": 0.0, "kl1": 0.0, "kl2": 0.0, "m1_gen": 0.0, "m2_gen": 0.0,
         "future": 0.0,
     }
-    n_batches = len(loader)
+    if metric_sums is not None:
+        metrics.update(metric_sums)
+    n_batches = start_batch + len(loader)
 
-    for batch_idx, batch in enumerate(loader):
+    for batch_idx, batch in enumerate(loader, start=start_batch):
         batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                  for k, v in batch.items()}
         current_opt_step = global_step_offset + (batch_idx + 1) // grad_accum
@@ -1108,6 +1118,8 @@ def train_epoch(model, loader, optimizer, scheduler, device, epoch,
                 batch_progress=batch_idx + 1,
                 running_train_metrics=metrics,
             )
+        if (batch_idx + 1) % grad_accum == 0 and on_optimizer_step is not None:
+            on_optimizer_step(batch_idx + 1, current_opt_step, dict(metrics))
 
         if is_main_process and (batch_idx + 1) % 10 == 0:
             n = batch_idx + 1
@@ -1179,6 +1191,15 @@ def eval_epoch(model, loader, device,
     for k in metrics:
         metrics[k] /= n_batches
     return reduce_metrics(metrics, device, world_size)
+
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "base_model", "model_type", "train_path", "preference_pairs_path", "image_dir",
+    "max_examples", "val_holdout_size", "split_seed", "num_epochs", "batch_size",
+    "grad_accum", "lr", "head_lr_mult", "max_ctx_len", "max_resp_len", "lora_r",
+    "lora_alpha", "lora_target_modules", "z_dim", "seed",
+)
 
 
 def save_checkpoint(model, processor, save_dir: str):
@@ -1287,6 +1308,10 @@ def main():
     parser.add_argument("--local_rank", type=int, default=-1,
                         help="Optional local rank for distributed launchers; "
                              "torchrun usually provides LOCAL_RANK via env.")
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=25,
+                        help="Refresh <output_dir>/last every N optimizer steps (and every epoch).")
     args = parser.parse_args()
 
     if args.gpu:
@@ -1454,16 +1479,27 @@ def main():
                 shuffle=False,
                 drop_last=False,
             )
-    loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=train_sampler is None,
-        sampler=train_sampler,
-        collate_fn=collate,
-        num_workers=2,
-        pin_memory=True,
-        drop_last=True,
-    )
+    def epoch_indices(epoch: int):
+        """This rank's deterministic sample order for an epoch (exact mid-epoch resume)."""
+        if train_sampler is not None:
+            train_sampler.set_epoch(epoch)
+            return list(train_sampler)
+        return epoch_order(len(train_dataset), args.seed, epoch)
+
+    def make_loader(indices):
+        return DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            sampler=indices,
+            collate_fn=collate,
+            num_workers=2,
+            pin_memory=True,
+            drop_last=True,
+            generator=torch.Generator(),
+        )
+
+    samples_per_rank = len(train_sampler) if train_sampler is not None else len(train_dataset)
+    batches_per_epoch = samples_per_rank // args.batch_size
     val_loader = None
     if len(val_dataset) > 0:
         val_loader = DataLoader(
@@ -1475,6 +1511,7 @@ def main():
             num_workers=1,
             pin_memory=True,
             drop_last=False,
+            generator=torch.Generator(),
         )
 
     # Optimizer: separate LR for LoRA vs custom heads
@@ -1493,7 +1530,7 @@ def main():
         {"params": head_params, "lr": head_lr, "weight_decay": args.weight_decay},
     ])
 
-    total_steps = (len(loader) * args.num_epochs) // args.grad_accum
+    total_steps = (batches_per_epoch * args.num_epochs) // args.grad_accum
     warmup_steps = max(1, int(total_steps * args.warmup_ratio))
     scheduler = get_cosine_schedule_with_warmup(optimizer, warmup_steps, total_steps)
 
@@ -1599,12 +1636,60 @@ def main():
         print(f"  Output: {args.output_dir}", flush=True)
         print(f"{'='*60}\n", flush=True)
 
+    def save_resume(epoch, next_batch, epoch_start_step, step, sums):
+        # Every rank's RNG is needed for an exact distributed resume.
+        rank_rngs = [None] * world_size
+        if distributed:
+            dist.all_gather_object(rank_rngs, rng_state())
+        if is_main_process:
+            save_resume_dir(
+                args.output_dir,
+                lambda d: save_checkpoint(reward_model, processor, str(d)),
+                {
+                    "args": vars(args), "epoch": epoch, "next_batch": next_batch,
+                    "epoch_start_step": epoch_start_step, "global_step": step,
+                    "metric_sums": sums, "best_metric": best_metric, "best_source": best_source,
+                    "rank_rngs": rank_rngs if distributed else None,
+                    "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+                },
+            )
+        maybe_barrier()
+
     global_step = 0
+    start_epoch, start_batch, epoch_start_step, resumed_sums = 0, 0, 0, None
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        if state["rank_rngs"] is not None and len(state["rank_rngs"]) != world_size:
+            raise ValueError("Resume with the same number of processes as the interrupted run.")
+        core = unwrap_model(reward_model)
+        for head_name in CUSTOM_HEAD_NAMES:
+            getattr(core, head_name).load_state_dict(torch.load(
+                os.path.join(resume_dir, f"{head_name}.pth"), map_location=device, weights_only=True,
+            ))
+        load_lora_weights(core.base_model, os.path.join(resume_dir, "lora_adapter"))
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        global_step, best_metric, best_source = (
+            state["global_step"], state["best_metric"], state["best_source"]
+        )
+        start_epoch, start_batch = state["epoch"], state["next_batch"]
+        epoch_start_step, resumed_sums = state["epoch_start_step"], state["metric_sums"]
+        restore_rng_state(state["rank_rngs"][rank] if state["rank_rngs"] else state["rng"])
+        log(f"Resumed from {resume_dir}: epoch={start_epoch} batch={start_batch} step={global_step}")
+
     start_time = time.time()
 
-    for epoch in range(args.num_epochs):
-        if train_sampler is not None:
-            train_sampler.set_epoch(epoch)
+    for epoch in range(start_epoch, args.num_epochs):
+        first_batch = start_batch if epoch == start_epoch else 0
+        epoch_offset = epoch_start_step if epoch == start_epoch else global_step
+        loader = make_loader(epoch_indices(epoch)[first_batch * args.batch_size:])
+
+        def on_optimizer_step(next_batch, opt_step, sums, epoch=epoch, epoch_offset=epoch_offset):
+            if args.resume_every > 0 and opt_step % args.resume_every == 0:
+                save_resume(epoch, next_batch, epoch_offset, opt_step, sums)
+
         metrics, global_step = train_epoch(
             reward_model, loader, optimizer, scheduler, device, epoch,
             kl_weight=args.kl_weight, z_only_weight=args.z_only_weight,
@@ -1614,12 +1699,15 @@ def main():
             z2_kl_delay_steps=args.z2_kl_delay_steps,
             z2_warmup_steps=args.z2_warmup_steps,
             grad_accum=args.grad_accum,
-            global_step_offset=global_step,
+            global_step_offset=epoch_offset,
             max_grad_norm=args.max_grad_norm,
             world_size=world_size,
             is_main_process=is_main_process,
             save_every_steps=args.save_every_steps,
             on_checkpoint_step=save_and_maybe_validate,
+            start_batch=first_batch,
+            metric_sums=resumed_sums if epoch == start_epoch else None,
+            on_optimizer_step=on_optimizer_step,
         )
         if is_main_process:
             print(f"\nEpoch {epoch+1}/{args.num_epochs} complete:", flush=True)
@@ -1637,11 +1725,12 @@ def main():
             current_step=global_step,
             checkpoint_name=f"epoch_{epoch}",
             epoch_idx=epoch,
-            batch_progress=len(loader),
+            batch_progress=batches_per_epoch,
             running_train_metrics=metrics,
             train_metrics_are_averages=True,
             run_validation=not should_validate_epoch,
         )
+        save_resume(epoch + 1, 0, global_step, global_step, None)
 
         gc.collect()
         torch.cuda.empty_cache()

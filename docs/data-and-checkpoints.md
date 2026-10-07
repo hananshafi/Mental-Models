@@ -30,6 +30,9 @@ character images and COCO train2017 images into `projects/mmrole/images/`.
 
 ## Canonical checkpoint names
 
+Each training output directory also holds `last/`, the rolling resume state
+used by `--resume`; it is not a checkpoint to evaluate.
+
 ### SOTOPIA
 
 ```text

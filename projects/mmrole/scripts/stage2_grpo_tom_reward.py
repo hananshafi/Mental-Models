@@ -60,6 +60,17 @@ from model_utils import (
     resolve_image, load_and_resize_image,
     prepare_generation_inputs,
 )
+from resume_state import (
+    check_resume_args, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
+
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "base_model", "model_type", "sft_checkpoint", "train_path", "image_dir",
+    "max_examples", "num_iterations", "prompts_per_iter", "group_size",
+    "max_gen_len", "lr", "kl_coeff", "clip_eps", "seed",
+)
 
 print(">> All imports done.", flush=True)
 
@@ -599,6 +610,8 @@ class GRPOToMTrainer:
 def train(args):
     if args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    random.seed(args.seed)
+    torch.manual_seed(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     n_gpus = torch.cuda.device_count()
     print(f"Device: {device}, GPUs: {n_gpus}", flush=True)
@@ -630,6 +643,10 @@ def train(args):
         policy_model = get_peft_model(base_model, lora_config)
 
     policy_model = policy_model.to(device)
+    # Without checkpointing one 7B VLM update needs more than a 48 GB GPU holds;
+    # non-reentrant checkpointing preserves the RNG stream, so updates are unchanged.
+    policy_model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+    policy_model.enable_input_require_grads()
     policy_model.print_trainable_parameters()
 
     # Load reference model (frozen SFT or base)
@@ -707,10 +724,38 @@ def train(args):
     best_reward = -float("inf")
     reward_history = []
     patience_counter = 0
+    start_iteration = 1
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        state = load_resume_state(resume_dir)
+        check_resume_args(state["args"], args, RESUME_INVARIANT_ARGS)
+        load_lora_weights(policy_model, os.path.join(resume_dir, "policy"))
+        optimizer.load_state_dict(state["optimizer"])
+        scheduler.load_state_dict(state["scheduler"])
+        best_reward, patience_counter = state["best_reward"], state["patience_counter"]
+        reward_history = state["reward_history"]
+        start_iteration = (
+            args.num_iterations + 1 if state["stopped_early"] else state["next_iteration"]
+        )
+        restore_rng_state(state["rng"])
+        print(f"  Resumed from {resume_dir} at iteration {start_iteration}", flush=True)
+
+    def save_resume(next_iteration, stopped_early):
+        save_resume_dir(
+            args.output_dir,
+            lambda d: policy_model.save_pretrained(os.path.join(d, "policy")),
+            {
+                "args": config, "next_iteration": next_iteration,
+                "stopped_early": stopped_early, "best_reward": best_reward,
+                "patience_counter": patience_counter, "reward_history": reward_history,
+                "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+            },
+        )
+
     start_time = time.time()
     log_file = open(os.path.join(args.output_dir, "training_log.jsonl"), "a")
 
-    for iteration in range(1, args.num_iterations + 1):
+    for iteration in range(start_iteration, args.num_iterations + 1):
         # Sample batch of prompts
         batch_indices = random.sample(range(len(dataset)), min(args.prompts_per_iter, len(dataset)))
         batch_examples = [dataset[i] for i in batch_indices]
@@ -765,7 +810,13 @@ def train(args):
             processor.save_pretrained(ckpt_dir)
 
         # Early stopping
-        if args.patience > 0 and patience_counter >= args.patience:
+        stop = args.patience > 0 and patience_counter >= args.patience
+        if args.resume_every > 0 and (
+            iteration % args.resume_every == 0 or stop or iteration == args.num_iterations
+        ):
+            log_file.flush()
+            save_resume(iteration + 1, stop)
+        if stop:
             print(f"\n  Early stopping: no improvement for {args.patience} iterations",
                   flush=True)
             break
@@ -836,6 +887,11 @@ def main():
     parser.add_argument("--output_dir", type=str,
                         default="projects/mmrole/checkpoints/stage2_grpo")
     parser.add_argument("--gpu", type=str, default="")
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=10,
+                        help="Refresh <output_dir>/last every N iterations.")
     args = parser.parse_args()
 
     train(args)

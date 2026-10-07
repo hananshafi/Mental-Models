@@ -34,6 +34,7 @@ import os
 import sys
 import json
 import gc
+import math
 import time
 import argparse
 import random
@@ -60,6 +61,12 @@ from transformers import (
     get_cosine_schedule_with_warmup,
 )
 from peft import LoraConfig, get_peft_model, PeftModel
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from resume_state import (  # noqa: E402
+    check_resume_args, epoch_order, load_lora_weights, load_resume_state,
+    require_resume_dir, restore_rng_state, save_resume_dir,
+)
 
 print(">> All imports done.", flush=True)
 
@@ -766,20 +773,36 @@ class SFTDataset(Dataset):
 
 
 def run_sft_warmup(model, dataset, tokenizer, device, num_epochs=1, lr=2e-5,
-                   batch_size=4, grad_accum=4):
+                   batch_size=4, grad_accum=4, seed=42, resume=None, on_optimizer_step=None):
+    """SFT warm-up. resume restores a saved position; on_optimizer_step is called
+    as (epoch, next_batch, optimizer, scheduler, total_loss) after each step."""
     print("\n=== SFT Warm-up Phase ===", flush=True)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    batches_per_epoch = math.ceil(len(dataset) / batch_size)
 
     optimizer = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad], lr=lr, weight_decay=0.01
     )
-    total_steps = len(dataloader) * num_epochs // grad_accum
+    total_steps = batches_per_epoch * num_epochs // grad_accum
     scheduler = get_cosine_schedule_with_warmup(optimizer, int(0.1 * total_steps), total_steps)
+    start_epoch, start_batch, carried_loss = 0, 0, 0.0
+    if resume is not None:
+        optimizer.load_state_dict(resume["optimizer"])
+        scheduler.load_state_dict(resume["scheduler"])
+        start_epoch, start_batch, carried_loss = (
+            resume["epoch"], resume["next_batch"], resume["total_loss"]
+        )
 
     model.train()
-    for epoch in range(num_epochs):
-        total_loss = 0
-        for batch_idx, batch in enumerate(dataloader):
+    for epoch in range(start_epoch, num_epochs):
+        first_batch = start_batch if epoch == start_epoch else 0
+        total_loss = carried_loss if epoch == start_epoch else 0
+        # The private generator keeps loader seeding off the global RNG stream.
+        dataloader = DataLoader(
+            dataset, batch_size=batch_size,
+            sampler=epoch_order(len(dataset), seed, epoch)[first_batch * batch_size:],
+            generator=torch.Generator(),
+        )
+        for batch_idx, batch in enumerate(dataloader, start=first_batch):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             labels = batch["labels"].to(device)
@@ -790,7 +813,8 @@ def run_sft_warmup(model, dataset, tokenizer, device, num_epochs=1, lr=2e-5,
 
             loss.backward()
 
-            if (batch_idx + 1) % grad_accum == 0:
+            stepped = (batch_idx + 1) % grad_accum == 0
+            if stepped:
                 torch.nn.utils.clip_grad_norm_(
                     [p for p in model.parameters() if p.requires_grad], max_norm=1.0
                 )
@@ -799,12 +823,14 @@ def run_sft_warmup(model, dataset, tokenizer, device, num_epochs=1, lr=2e-5,
                 optimizer.zero_grad()
 
             total_loss += loss.item() * grad_accum
+            if stepped and on_optimizer_step is not None:
+                on_optimizer_step(epoch, batch_idx + 1, optimizer, scheduler, total_loss)
 
             if (batch_idx + 1) % 20 == 0:
                 print(f"  SFT Epoch {epoch+1} Step {batch_idx+1}: "
                       f"loss={total_loss/(batch_idx+1):.4f}", flush=True)
 
-        print(f"  SFT Epoch {epoch+1} done: avg_loss={total_loss/len(dataloader):.4f}", flush=True)
+        print(f"  SFT Epoch {epoch+1} done: avg_loss={total_loss/batches_per_epoch:.4f}", flush=True)
 
     return model
 
@@ -1142,6 +1168,15 @@ PRESETS = {
 }
 
 
+# Arguments that must match between an interrupted run and its resumption.
+RESUME_INVARIANT_ARGS = (
+    "policy_model_name", "reward_model_name", "reward_checkpoint_dir", "reward_version",
+    "data_path", "preset", "group_size", "grpo_epochs", "prompts_per_step", "lr",
+    "max_gen_len", "max_ctx_len", "sft_warmup", "sft_checkpoint", "sft_epochs", "sft_lr",
+    "sft_batch_size", "lora_r", "lora_alpha", "num_lora_layers", "grpo_grad_accum", "seed",
+)
+
+
 def apply_preset(args, preset_name):
     """Apply preset values for any arg that wasn't explicitly set on CLI."""
     if preset_name not in PRESETS:
@@ -1213,7 +1248,11 @@ def main():
     parser.add_argument("--patience", type=int, default=0,
                         help="Early stopping patience (0=disabled). Stops if no improvement for N steps.")
 
-    parser.add_argument("--resume_from_step", type=int, default=0)
+    parser.add_argument("--resume", action="store_true",
+                        help="Continue from <output_dir>/last after an interruption.")
+    parser.add_argument("--resume_every", type=int, default=20,
+                        help="Refresh <output_dir>/last every N optimizer steps "
+                             "(SFT warm-up and GRPO).")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--gpu", type=str, default="0")
     parser.add_argument("--save_every", type=int, default=50)
@@ -1232,7 +1271,7 @@ def main():
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    print(f">> Args: GPU={args.gpu}, resume={args.resume_from_step}, preset={args.preset}", flush=True)
+    print(f">> Args: GPU={args.gpu}, resume={args.resume}, preset={args.preset}", flush=True)
 
     num_gpus = torch.cuda.device_count()
     print(f">> Visible GPUs: {num_gpus}", flush=True)
@@ -1295,14 +1334,15 @@ def main():
     policy_model.enable_input_require_grads()
     print(">> Policy model loaded.", flush=True)
 
-    if args.resume_from_step > 0:
-        resume_dir = os.path.join(args.output_dir, f"step_{args.resume_from_step}")
-        print(f">> Resuming from {resume_dir}", flush=True)
-        policy_model = PeftModel.from_pretrained(
-            policy_model, resume_dir, torch_dtype=torch.bfloat16, is_trainable=True,
-        )
-        print(f">> LoRA loaded from step {args.resume_from_step}.", flush=True)
-    elif args.sft_checkpoint:
+    resume_state = None
+    if args.resume:
+        resume_dir = require_resume_dir(args.output_dir)
+        resume_state = load_resume_state(resume_dir)
+        check_resume_args(resume_state["args"], args, RESUME_INVARIANT_ARGS)
+        print(f">> Resuming from {resume_dir} (phase={resume_state['phase']})", flush=True)
+    resume_phase = resume_state["phase"] if resume_state else None
+
+    if args.sft_checkpoint:
         print(f">> Loading SFT checkpoint: {args.sft_checkpoint}", flush=True)
         policy_model = PeftModel.from_pretrained(
             policy_model, args.sft_checkpoint, torch_dtype=torch.bfloat16, is_trainable=True,
@@ -1322,8 +1362,14 @@ def main():
 
     for name, param in policy_model.named_parameters():
         param.requires_grad = "lora_" in name
+    if resume_state is not None:
+        load_lora_weights(policy_model, os.path.join(resume_dir, "policy"))
+        print(">> Policy LoRA restored from resume state.", flush=True)
     policy_model.print_trainable_parameters()
     policy_model.config.use_cache = False
+
+    def write_policy(directory):
+        policy_model.save_pretrained(os.path.join(directory, "policy"))
 
     # Reference model
     print(">> Loading reference model...", flush=True)
@@ -1339,21 +1385,41 @@ def main():
     grpo_dataset = GRPOPromptDataset(args.data_path, tokenizer, max_ctx_len=args.max_ctx_len)
 
     # SFT warmup
-    if args.resume_from_step > 0:
-        print(f">> Skipping SFT (resuming from step {args.resume_from_step})", flush=True)
-    elif args.sft_checkpoint:
+    if args.sft_checkpoint:
         print(f">> Skipping SFT (using checkpoint {args.sft_checkpoint})", flush=True)
+    elif resume_phase == "grpo":
+        print(">> Skipping SFT (completed before the interruption)", flush=True)
     elif args.sft_warmup:
         sft_dataset = SFTDataset(grpo_dataset, tokenizer,
                                  max_len=args.max_ctx_len + args.max_gen_len)
+
+        def save_sft_resume(epoch, next_batch, sft_optimizer, sft_scheduler, total_loss):
+            if args.resume_every > 0 and sft_scheduler.last_epoch % args.resume_every == 0:
+                save_resume_dir(args.output_dir, write_policy, {
+                    "phase": "sft", "args": vars(args),
+                    "sft": {
+                        "epoch": epoch, "next_batch": next_batch, "total_loss": total_loss,
+                        "optimizer": sft_optimizer.state_dict(),
+                        "scheduler": sft_scheduler.state_dict(),
+                    },
+                })
+
+        if resume_phase == "sft":
+            restore_rng_state(resume_state["rng"])
         policy_model = run_sft_warmup(
             policy_model, sft_dataset, tokenizer, policy_device,
             num_epochs=args.sft_epochs, lr=args.sft_lr, batch_size=args.sft_batch_size,
+            seed=args.seed,
+            resume=resume_state["sft"] if resume_phase == "sft" else None,
+            on_optimizer_step=save_sft_resume,
         )
         sft_dir = os.path.join(args.output_dir, "sft_warmup")
         os.makedirs(sft_dir, exist_ok=True)
         policy_model.save_pretrained(sft_dir)
         print(f">> SFT checkpoint saved to {sft_dir}", flush=True)
+        # GRPO has not started yet; a resume from here begins it from scratch.
+        save_resume_dir(args.output_dir, write_policy, {"phase": "grpo", "args": vars(args), "grpo": None})
+        resume_state, resume_phase = None, None
 
     # GRPO Training
     print("\n================================================", flush=True)
@@ -1390,9 +1456,35 @@ def main():
 
     global_step = 0
     opt_step = 0
-    resume_step = args.resume_from_step
     best_reward = -float("inf")
     no_improve_count = 0
+    start_epoch, start_index, resumed_epoch_rewards = 0, 0, []
+    early_stopped = False
+    if resume_phase == "grpo":
+        grpo_state = resume_state["grpo"]
+        if grpo_state is not None:
+            optimizer.load_state_dict(grpo_state["optimizer"])
+            scheduler.load_state_dict(grpo_state["scheduler"])
+            global_step, opt_step = grpo_state["global_step"], grpo_state["opt_step"]
+            best_reward, no_improve_count = grpo_state["best_reward"], grpo_state["no_improve_count"]
+            start_epoch, start_index = grpo_state["epoch"], grpo_state["next_index"]
+            resumed_epoch_rewards = grpo_state["epoch_rewards"]
+            early_stopped = grpo_state["early_stopped"]
+        restore_rng_state(resume_state["rng"])
+        print(f">> Resuming GRPO at epoch {start_epoch}, sample {start_index}, "
+              f"step {global_step}", flush=True)
+
+    def save_grpo_resume(epoch, next_index, epoch_rewards):
+        save_resume_dir(args.output_dir, write_policy, {
+            "phase": "grpo", "args": vars(args),
+            "grpo": {
+                "epoch": epoch, "next_index": next_index,
+                "global_step": global_step, "opt_step": opt_step,
+                "best_reward": best_reward, "no_improve_count": no_improve_count,
+                "epoch_rewards": list(epoch_rewards), "early_stopped": early_stopped,
+                "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+            },
+        })
 
     n_last_turn = sum(1 for s in all_samples if s[2] is not None)
     print(f">> {len(all_samples)} samples, ~{steps_per_epoch} steps/epoch, "
@@ -1404,39 +1496,34 @@ def main():
           f"max_grad_norm: {args.max_grad_norm}", flush=True)
     if args.patience > 0:
         print(f">> Early stopping: patience={args.patience} steps", flush=True)
-    if resume_step > 0:
-        print(f">> Skipping first {resume_step} steps", flush=True)
 
-    early_stopped = False
-    for epoch in range(args.grpo_epochs):
+    for epoch in range(start_epoch, args.grpo_epochs):
         if early_stopped:
             break
 
         print(f"\n--- GRPO Epoch {epoch+1}/{args.grpo_epochs} ---", flush=True)
-        random.shuffle(all_samples)
-        epoch_rewards = []
+        # Deterministic per-epoch order so an interrupted run resumes on the same prompts.
+        order = list(range(len(all_samples)))
+        random.Random(args.seed + epoch).shuffle(order)
+        epoch_rewards = resumed_epoch_rewards if epoch == start_epoch else []
+        first_index = start_index if epoch == start_epoch else 0
 
-        for i in range(0, len(all_samples), args.prompts_per_step):
+        for i in range(first_index, len(all_samples), args.prompts_per_step):
             if early_stopped:
                 break
 
-            batch = all_samples[i:i + args.prompts_per_step]
+            batch = [all_samples[j] for j in order[i:i + args.prompts_per_step]]
             if not batch:
                 continue
 
             global_step += 1
-
-            if global_step <= resume_step:
-                if global_step % 50 == 0:
-                    print(f"  Skipping step {global_step}/{resume_step}...", flush=True)
-                continue
 
             batch_prompts = [b[0] for b in batch]
             batch_reward_contexts = [b[1] for b in batch]
             batch_trajectory_rewards = [b[2] for b in batch]
 
             # Determine if this is a gradient accumulation boundary
-            accum_idx = (global_step - resume_step - 1) % args.grpo_grad_accum
+            accum_idx = (global_step - 1) % args.grpo_grad_accum
             accumulate_only = (accum_idx < args.grpo_grad_accum - 1)
 
             if not accumulate_only:
@@ -1493,6 +1580,11 @@ def main():
                       f"(no improvement for {args.patience} steps)", flush=True)
                 early_stopped = True
 
+            # Resume state is written only at accumulation boundaries.
+            if (not accumulate_only and args.resume_every > 0
+                    and opt_step % args.resume_every == 0):
+                save_grpo_resume(epoch, i + args.prompts_per_step, epoch_rewards)
+
         if epoch_rewards:
             mean_epoch_reward = sum(epoch_rewards) / len(epoch_rewards)
             print(f"\nEpoch {epoch+1} done: mean_reward={mean_epoch_reward:.4f}", flush=True)
@@ -1500,6 +1592,9 @@ def main():
             epoch_dir = os.path.join(args.output_dir, f"epoch_{epoch}")
             os.makedirs(epoch_dir, exist_ok=True)
             policy_model.save_pretrained(epoch_dir)
+
+        if global_step % args.grpo_grad_accum == 0:
+            save_grpo_resume(epoch + 1, 0, [])
 
         gc.collect()
         torch.cuda.empty_cache()
