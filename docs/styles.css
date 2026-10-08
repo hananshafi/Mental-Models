@@ -319,6 +319,7 @@ button {
   color: #aa4054;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: 0 3px 10px rgba(152, 71, 90, 0.08);
+  text-transform: none;
 }
 
 .resource-links {
