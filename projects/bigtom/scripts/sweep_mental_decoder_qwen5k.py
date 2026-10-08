@@ -1,5 +1,5 @@
 """
-Sweep across stage1_qwen_5k checkpoints to find one whose mental decoder
+Sweep across stage1_qwen checkpoints to find one whose mental decoder
 hasn't collapsed onto branch-prototypes. Decodes m1/m2 for the same set of
 scenarios at each ckpt and reports cross-scenario diversity.
 """
@@ -57,7 +57,7 @@ def main():
     )
     ap.add_argument("--n_scenarios", type=int, default=6)
     ap.add_argument("--max_new_tokens", type=int, default=40)
-    ap.add_argument("--out", type=str, default=str(REPO / "checkpoints/stage1_qwen_5k/decoder_sweep.md"))
+    ap.add_argument("--out", type=str, default=str(REPO / "checkpoints/stage1_qwen/decoder_sweep.md"))
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -70,13 +70,13 @@ def main():
     sids = pick_scenarios(by_sid, args.n_scenarios)
     print(f"Probing scenarios: {sids}", flush=True)
 
-    out_lines = ["# stage1_qwen_5k mental-decoder sweep", ""]
+    out_lines = ["# stage1_qwen mental-decoder sweep", ""]
     summary_table = [
         "| ckpt | step | kl1 | kl2 | m1 CE | m2 CE | m1 unique/N | m1 trig-uniq | m2 unique/N | m2 trig-uniq |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
 
-    base_dir = REPO / "checkpoints/stage1_qwen_5k"
+    base_dir = REPO / "checkpoints/stage1_qwen"
     for tag in args.ckpts:
         ckpt_dir = base_dir / tag
         if not ckpt_dir.exists():
@@ -139,7 +139,7 @@ def main():
         del model
         torch.cuda.empty_cache()
 
-    out_lines = ["# stage1_qwen_5k mental-decoder sweep", "",
+    out_lines = ["# stage1_qwen mental-decoder sweep", "",
                  "## Summary"] + summary_table + [""] + out_lines[2:]
     Path(args.out).write_text("\n".join(out_lines))
     print(f"\nWrote {args.out}")

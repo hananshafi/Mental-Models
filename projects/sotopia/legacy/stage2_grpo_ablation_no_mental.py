@@ -876,11 +876,12 @@ def main():
 
     parser.add_argument("--resume_from_step", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="0")
+    parser.add_argument("--gpu", type=str, default="")
     parser.add_argument("--save_every", type=int, default=50)
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 

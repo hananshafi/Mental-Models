@@ -290,13 +290,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--folds", type=int, default=5)
     p.add_argument("--text_components", type=int, default=64)
     p.add_argument("--ridge_alpha", type=float, default=10.0)
-    p.add_argument("--gpu", default="0")
+    p.add_argument("--gpu", default="")
     return p.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

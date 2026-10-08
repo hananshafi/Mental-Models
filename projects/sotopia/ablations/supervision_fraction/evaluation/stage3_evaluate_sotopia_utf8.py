@@ -15,11 +15,11 @@ Evaluation uses GPT-4o as judge with SotopiaDimensions (7 dimensions):
 
 # OPENAI_API_KEY="sk-..." CUDA_VISIBLE_DEVICES=0 python projects/sotopia/scripts/stage3_evaluate_sotopia.py \
 #   --policy_model_name Qwen/Qwen2.5-7B-Instruct \
-#   --policy_adapter_path projects/sotopia/checkpoints/grpo_agent_v2/best \
+#   --policy_adapter_path projects/sotopia/checkpoints/grpo_agent_qwen_v3/best \
 #   --merge_adapter \
 #   --use_hf \
 #   --deduplicate_envs \
-#   --output_path projects/sotopia/eval_results/grpo_v2_best_eval_results.jsonl \
+#   --output_path projects/sotopia/runs/evaluation/qwen_grpo.jsonl \
 #   --max_turns 10 \
 #   --policy_agent_index 0 \
 #   --partner_model gpt-4o-mini \
@@ -34,12 +34,12 @@ Evaluation uses GPT-4o as judge with SotopiaDimensions (7 dimensions):
 
 # OPENAI_API_KEY="sk-..." CUDA_VISIBLE_DEVICES=0 python projects/sotopia/scripts/stage3_evaluate_sotopia.py \
 #   --policy_model_name Qwen/Qwen2.5-7B-Instruct \
-#   --policy_adapter_path projects/sotopia/checkpoints/grpo_agent_v2/best \
+#   --policy_adapter_path projects/sotopia/checkpoints/grpo_agent_qwen_v3/best \
 #   --merge_adapter \
 #   --use_hf \
 #   --deduplicate_envs \
 #   --task hard \
-#   --output_path projects/sotopia/eval_results/grpo_v2_hard_eval_results.jsonl \
+#   --output_path projects/sotopia/runs/evaluation/qwen_grpo_hard.jsonl \
 #   --max_turns 10 \
 #   --seed 42
 
@@ -48,12 +48,12 @@ Evaluation uses GPT-4o as judge with SotopiaDimensions (7 dimensions):
 # === Qwen SFT ===
 # CUDA_VISIBLE_DEVICES=3 OPENAI_API_KEY="sk-..." python projects/sotopia/scripts/stage3_evaluate_sotopia.py \
 #   --policy_model_name Qwen/Qwen2.5-7B-Instruct \
-#   --policy_adapter_path projects/sotopia/checkpoints/grpo_agent_v3/sft_warmup \
+#   --policy_adapter_path projects/sotopia/checkpoints/grpo_agent_qwen_v3/sft_warmup \
 #   --merge_adapter \
 #   --use_hf \
 #   --deduplicate_envs \
 #   --task all \
-#   --output_path projects/sotopia/eval_results/sft_qwen_v2_eval_results.jsonl \
+#   --output_path projects/sotopia/runs/evaluation/qwen_sft.jsonl \
 #   --max_turns 10 \
 #   --partner_model gpt-4o-mini \
 #   --judge_model gpt-4o \
@@ -314,7 +314,12 @@ class GRPOAgent(BaseAgent[Observation, AgentAction]):
             model_name, torch_dtype=torch.bfloat16,
         )
 
-        if adapter_path and os.path.exists(adapter_path):
+        if adapter_path:
+            if not os.path.exists(adapter_path):
+                raise FileNotFoundError(
+                    f"Policy adapter {adapter_path} does not exist. "
+                    "Pass --no_adapter to evaluate the base model."
+                )
             print(f"Loading LoRA adapter from: {adapter_path}")
             model = PeftModel.from_pretrained(
                 model, adapter_path, torch_dtype=torch.bfloat16,
@@ -1085,8 +1090,8 @@ def main():
     # Model config
     parser.add_argument("--policy_model_name", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     parser.add_argument("--policy_adapter_path", type=str,
-                        default="projects/sotopia/checkpoints/grpo_agent/step_950",
-                        help="Path to GRPO LoRA adapter")
+                        default="projects/sotopia/checkpoints/grpo_agent_qwen_v3/best",
+                        help="Path to GRPO LoRA adapter (use --no_adapter for the base model)")
     parser.add_argument("--merge_adapter", action="store_true", default=True,
                         help="Merge LoRA adapter into base model for faster inference")
     parser.add_argument("--no_adapter", action="store_true", default=False,
@@ -1134,10 +1139,11 @@ def main():
     parser.add_argument("--tag", type=str, default="grpo_eval",
                         help="Tag for the evaluation run")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="0")
+    parser.add_argument("--gpu", type=str, default="")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 

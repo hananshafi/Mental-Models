@@ -74,4 +74,4 @@ class ThetaConditionedReward(nn.Module):
         # 3. Predict Reward
         r = self.head(fusion_input) # (B, 1)
 
-        return r.squeeze(-1) # (B,)+
+        return r.squeeze(-1) # (B,)

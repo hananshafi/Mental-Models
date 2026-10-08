@@ -377,7 +377,7 @@ def main():
     ap.add_argument("--mode", choices=["base", "sft", "grpo"], required=True)
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--stage1_ckpt", type=str,
-                    default="projects/bigtom/checkpoints/stage1/epoch_2")
+                    default="projects/bigtom/checkpoints/stage1_qwen/best_ckpt")
     ap.add_argument("--policy_ckpt", type=str, default=None,
                     help="Stage 2 SFT or Stage 3 GRPO checkpoint dir (has policy_lora/ + projector.pt)")
     ap.add_argument("--bigtom_csv", type=str,

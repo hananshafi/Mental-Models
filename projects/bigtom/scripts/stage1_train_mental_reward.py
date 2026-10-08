@@ -29,10 +29,10 @@ Negative response = the gold action of the OTHER branch (false-vs-true belief).
 
 Usage
 -----
-  python stage1_train_mental_reward.py \\
-      --data ../data/bigtom_qwen_5k_annotated.jsonl \\
+  python projects/bigtom/scripts/stage1_train_mental_reward.py \\
+      --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \\
       --base_model Qwen/Qwen2.5-7B-Instruct \\
-      --out ../checkpoints/stage1 --epochs 3 --batch_size 4
+      --out projects/bigtom/checkpoints/stage1_qwen --epochs 3
 
 Every checkpoint also refreshes <out>/last/, which holds the optimizer,
 scheduler, data position, and RNG state. After a crash, rerun the same command
@@ -577,7 +577,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=str, default="projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl")
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
-    ap.add_argument("--out", type=str, default="projects/bigtom/checkpoints/stage1")
+    ap.add_argument("--out", type=str, default="projects/bigtom/checkpoints/stage1_qwen")
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--batch_size", type=int, default=8)
     ap.add_argument("--grad_accum", type=int, default=4)

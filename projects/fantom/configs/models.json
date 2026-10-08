@@ -26,24 +26,24 @@
     "bigtom_sft_epoch1": {
       "kind": "bigtom_latent",
       "base_model": "Qwen/Qwen2.5-7B-Instruct",
-      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt",
-      "policy_ckpt": "projects/bigtom/checkpoints/stage2_qwen_5k/epoch_1",
+      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen/best_ckpt",
+      "policy_ckpt": "projects/bigtom/checkpoints/stage2_qwen/epoch_1",
       "training_source": "BigToM",
       "rebuttal_role": "latent-prefix SFT control"
     },
     "bigtom_grpo_step300": {
       "kind": "bigtom_latent",
       "base_model": "Qwen/Qwen2.5-7B-Instruct",
-      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt",
-      "policy_ckpt": "projects/bigtom/checkpoints/stage3_qwen_5k/step_300",
+      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen/best_ckpt",
+      "policy_ckpt": "projects/bigtom/checkpoints/stage3_qwen/step_300",
       "training_source": "BigToM",
       "rebuttal_role": "primary latent-prefix GRPO model"
     },
     "bigtom_grpo_step50": {
       "kind": "bigtom_latent",
       "base_model": "Qwen/Qwen2.5-7B-Instruct",
-      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt",
-      "policy_ckpt": "projects/bigtom/checkpoints/stage3_qwen_5k/step_50",
+      "stage1_ckpt": "projects/bigtom/checkpoints/stage1_qwen/best_ckpt",
+      "policy_ckpt": "projects/bigtom/checkpoints/stage3_qwen/step_50",
       "training_source": "BigToM",
       "rebuttal_role": "paper-selected GRPO checkpoint"
     },

@@ -205,6 +205,12 @@ class FrozenVisualToMRewardModel:
         self.ensemble_weight = ensemble_weight
         self.max_ctx_len = max_ctx_len
         self.max_resp_len = max_resp_len
+        required = ["lora_adapter"] + [
+            f"{name}.pth" for name in ("z1_mu", "z2_mu", "joint_outcome_head")
+        ]
+        missing = [name for name in required if not os.path.exists(os.path.join(checkpoint_dir, name))]
+        if missing:
+            raise FileNotFoundError(f"Reward checkpoint {checkpoint_dir} is missing {missing}.")
 
         print(f"  [Reward] Loading base VLM ({base_model_name})...", flush=True)
         base_model, processor, detected_type = load_base_model(
@@ -217,14 +223,11 @@ class FrozenVisualToMRewardModel:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
         lora_path = os.path.join(checkpoint_dir, "lora_adapter")
-        if os.path.exists(lora_path):
-            print(f"  [Reward] Merging LoRA adapter from {lora_path}...", flush=True)
-            base_model = PeftModel.from_pretrained(
-                base_model, lora_path, torch_dtype=torch.bfloat16,
-            )
-            base_model = base_model.merge_and_unload()
-        else:
-            print(f"  [Reward] WARNING: no LoRA adapter at {lora_path}", flush=True)
+        print(f"  [Reward] Merging LoRA adapter from {lora_path}...", flush=True)
+        base_model = PeftModel.from_pretrained(
+            base_model, lora_path, torch_dtype=torch.bfloat16,
+        )
+        base_model = base_model.merge_and_unload()
 
         base_model = base_model.to(device)
 
@@ -1121,6 +1124,14 @@ class GRPOLearnedRewardTrainer:
 def train(args):
     if args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    for flag, path in (
+        ("--sft_checkpoint", args.sft_checkpoint),
+        ("--reward_checkpoint_dir", args.reward_checkpoint_dir),
+        ("--mental_prefix_checkpoint_dir", args.mental_prefix_checkpoint_dir),
+    ):
+        if path and not os.path.exists(path):
+            hint = " Pass --sft_checkpoint '' to start from a fresh LoRA." if flag == "--sft_checkpoint" else ""
+            raise FileNotFoundError(f"{flag} {path} does not exist.{hint}")
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 
@@ -1271,13 +1282,13 @@ def train(args):
     print(">> Loading policy model...", flush=True)
     base_policy, processor, _ = load_base_model(args.base_model, model_type)
 
-    if args.sft_checkpoint and os.path.exists(args.sft_checkpoint):
+    if args.sft_checkpoint:
         print(f"  Loading SFT LoRA from {args.sft_checkpoint}...", flush=True)
         policy_model = PeftModel.from_pretrained(
             base_policy, args.sft_checkpoint, is_trainable=True,
         )
     else:
-        print("  No SFT checkpoint — initializing fresh LoRA", flush=True)
+        print("  --sft_checkpoint is empty: initializing a fresh LoRA", flush=True)
         if args.lora_target_modules:
             target_modules = [m.strip() for m in args.lora_target_modules.split(",") if m.strip()]
         else:
@@ -1338,7 +1349,7 @@ def train(args):
     # non-finite logits in Qwen2.5-VL's attention layers.
     print(">> Loading reference model...", flush=True)
     ref_base, _, _ = load_base_model(args.base_model, model_type)
-    if args.sft_checkpoint and os.path.exists(args.sft_checkpoint):
+    if args.sft_checkpoint:
         ref_model = PeftModel.from_pretrained(
             ref_base, args.sft_checkpoint, is_trainable=True,
         )
@@ -1553,7 +1564,8 @@ def main():
     parser.add_argument("--model_type", type=str, default="",
                         choices=["", "qwen2.5-vl", "qwen-vl-chat"])
     parser.add_argument("--sft_checkpoint", type=str,
-                        default="projects/mmrole/checkpoints/stage1_sft/best")
+                        default="projects/mmrole/checkpoints/stage1_sft/best",
+                        help="Stage 1 SFT adapter to start from; pass '' for a fresh LoRA.")
     parser.add_argument("--reward_base_model", type=str, default="",
                         help="VLM used to train the reward model (defaults to --base_model)")
     parser.add_argument("--reward_model_type", type=str, default="",

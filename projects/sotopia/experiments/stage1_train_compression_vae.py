@@ -682,13 +682,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--probe_epochs", type=int, default=3)
     parser.add_argument("--probe_lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="0")
+    parser.add_argument("--gpu", type=str, default="")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -54,7 +54,7 @@ latent prefixes for the policy.
 ```bash
 CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage2_policy_sft.py \
   --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
-  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
+  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/best_ckpt \
   --out projects/bigtom/checkpoints/stage2_qwen
 ```
 
@@ -63,11 +63,11 @@ CUDA_VISIBLE_DEVICES=0,1 python projects/bigtom/scripts/stage2_policy_sft.py \
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage3_grpo.py \
   --data projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl \
-  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
+  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/best_ckpt \
   --stage2_ckpt projects/bigtom/checkpoints/stage2_qwen/epoch_1 \
   --out projects/bigtom/checkpoints/stage3_qwen \
   --max_steps 300 \
-  --save_every 100
+  --save_every 50
 ```
 
 ## Evaluation
@@ -76,7 +76,7 @@ CUDA_VISIBLE_DEVICES=0,1,2 python projects/bigtom/scripts/stage3_grpo.py \
 python projects/bigtom/scripts/evaluate_official_benchmarks.py \
   --datasets bigtom \
   --mode grpo \
-  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/epoch_2 \
+  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/best_ckpt \
   --policy_ckpt projects/bigtom/checkpoints/stage3_qwen/step_300 \
   --out_dir projects/bigtom/runs/official_bigtom
 ```

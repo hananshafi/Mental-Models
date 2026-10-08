@@ -25,7 +25,7 @@ No traversal in Phase 1 — that's Phase 2 if z2 cleanly beats z1 here.
 
 Usage:
   python scripts/analyse_tomi_latents.py \
-      --ckpt projects/bigtom/checkpoints/stage1_qwen_5k/step_300 \
+      --ckpt projects/bigtom/checkpoints/stage1_qwen/step_300 \
       --output_dir projects/bigtom/tomi2_latent_analysis_step300 \
       --max_records 1500
 """

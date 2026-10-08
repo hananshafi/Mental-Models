@@ -4,8 +4,8 @@ sys.path.insert(0, "projects/bigtom/scripts")
 from official_eval_common import load_policy_bundle, build_benchmark_prompt, normalize_text
 
 BASE="Qwen/Qwen2.5-7B-Instruct"
-STAGE1="projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt"
-POLICY="projects/bigtom/checkpoints/stage3_qwen_5k/step_300"
+STAGE1="projects/bigtom/checkpoints/stage1_qwen/best_ckpt"
+POLICY="projects/bigtom/checkpoints/stage3_qwen/step_300"
 EDIR="projects/bigtom/runs/e1"
 
 ap=argparse.ArgumentParser()

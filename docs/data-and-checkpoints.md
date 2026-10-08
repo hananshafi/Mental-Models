@@ -52,9 +52,9 @@ The supervision-fraction ablation writes its own checkpoints under
 
 ```text
 projects/bigtom/checkpoints/
-├── stage1_qwen_5k/best_ckpt/
-├── stage2_qwen_5k/epoch_1/
-└── stage3_qwen_5k/step_300/
+├── stage1_qwen/best_ckpt/
+├── stage2_qwen/epoch_1/
+└── stage3_qwen/step_300/
 ```
 
 Stage 1 contains the mental encoder, LoRA adapter, and learned heads. Stage 2

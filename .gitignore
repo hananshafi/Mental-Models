@@ -34,9 +34,9 @@ projects/**/logs/
 projects/**/eval_results/
 projects/**/eval_answers/
 projects/**/eval_reviews/
-projects/**/images/
+projects/**/images
 projects/**/raw_data/
-projects/**/training_data*/
+projects/**/training_data*
 projects/**/character_profiles/
 projects/**/*.jsonl
 projects/**/*.safetensors

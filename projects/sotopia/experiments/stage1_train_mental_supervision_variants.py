@@ -260,7 +260,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--val_ratio", type=float, default=0.1)
     p.add_argument("--num_workers", type=int, default=4)
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--gpu", default="0")
+    p.add_argument("--gpu", default="")
     return p.parse_args()
 
 
@@ -288,7 +288,8 @@ def freeze_no_mental_heads(model: RecursiveToMModel, variant: str) -> None:
 def main() -> None:
     args = parse_args()
     apply_variant_overrides(args)
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

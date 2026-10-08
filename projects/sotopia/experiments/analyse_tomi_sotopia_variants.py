@@ -254,13 +254,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--n_splits", type=int, default=5)
     p.add_argument("--n_perm", type=int, default=10)
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--gpu", default="0")
+    p.add_argument("--gpu", default="")
     return p.parse_args()
 
 
 def main():
     args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     out_dir = Path(args.output_dir); out_dir.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(args.seed)

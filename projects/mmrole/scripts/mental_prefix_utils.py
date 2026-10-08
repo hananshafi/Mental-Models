@@ -64,6 +64,12 @@ class FrozenMentalPrefixModel:
         self.device = device
         self.image_dir = image_dir
         self.max_ctx_len = max_ctx_len
+        required = ["lora_adapter"] + [
+            f"{name}.pth" for name in ("z1_mu", "z2_mu", "z1_only_reward_head", "z_combined_reward_head")
+        ]
+        missing = [name for name in required if not os.path.exists(os.path.join(checkpoint_dir, name))]
+        if missing:
+            raise FileNotFoundError(f"Mental-prefix checkpoint {checkpoint_dir} is missing {missing}.")
 
         base_model, processor, detected_type = load_base_model(
             base_model_name, model_type,

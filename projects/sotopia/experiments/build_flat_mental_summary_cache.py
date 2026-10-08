@@ -249,7 +249,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--retry_base_sleep", type=float, default=1.0)
     parser.add_argument("--retry_max_sleep", type=float, default=30.0)
     parser.add_argument("--progress_every", type=int, default=25)
-    parser.add_argument("--gpu", default="0")
+    parser.add_argument("--gpu", default="")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--max_new_tokens", type=int, default=220)
     parser.add_argument("--temperature", type=float, default=0.0)
@@ -260,7 +260,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     out_path = Path(args.output_jsonl)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     pairs = load_unique_pairs(args.data_path, limit=args.limit)

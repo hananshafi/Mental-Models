@@ -299,9 +299,9 @@ def main():
                     default="projects/bigtom/data/bigtom_qwen_5k_annotated.jsonl")
     ap.add_argument("--base_model", type=str, default="Qwen/Qwen2.5-7B-Instruct")
     ap.add_argument("--stage1_ckpt", type=str,
-                    default="projects/bigtom/checkpoints/stage1/epoch_2")
+                    default="projects/bigtom/checkpoints/stage1_qwen/best_ckpt")
     ap.add_argument("--out", type=str,
-                    default="projects/bigtom/checkpoints/stage2")
+                    default="projects/bigtom/checkpoints/stage2_qwen")
     ap.add_argument("--z_dim", type=int, default=128)
     ap.add_argument("--epochs", type=int, default=2)
     ap.add_argument("--batch_size", type=int, default=2)

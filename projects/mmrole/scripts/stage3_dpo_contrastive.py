@@ -340,6 +340,13 @@ def train(args):
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
+    # Policy and reference both start from this checkpoint.
+    start_checkpoint = args.grpo_checkpoint or args.sft_checkpoint
+    if start_checkpoint and not os.path.exists(start_checkpoint):
+        raise FileNotFoundError(
+            f"Start checkpoint {start_checkpoint} does not exist. Pass --grpo_checkpoint '' "
+            "to start from --sft_checkpoint, or both as '' for a fresh LoRA."
+        )
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     n_gpus = torch.cuda.device_count()
     print(f"Device: {device}, GPUs: {n_gpus}", flush=True)
@@ -353,20 +360,20 @@ def train(args):
     # Load model + processor/tokenizer
     base_model, processor, model_type = load_base_model(args.base_model, model_type)
 
-    if args.grpo_checkpoint and os.path.exists(args.grpo_checkpoint):
+    if args.grpo_checkpoint:
         print(f"Loading GRPO LoRA from {args.grpo_checkpoint}...", flush=True)
         policy_model = PeftModel.from_pretrained(
             base_model, args.grpo_checkpoint, is_trainable=True,
         )
         print("  GRPO LoRA loaded (trainable).", flush=True)
-    elif args.sft_checkpoint and os.path.exists(args.sft_checkpoint):
+    elif args.sft_checkpoint:
         print(f"Loading SFT LoRA from {args.sft_checkpoint}...", flush=True)
         policy_model = PeftModel.from_pretrained(
             base_model, args.sft_checkpoint, is_trainable=True,
         )
         print("  SFT LoRA loaded (trainable).", flush=True)
     else:
-        print("WARNING: No checkpoint provided, using base model with fresh LoRA.", flush=True)
+        print("WARNING: --grpo_checkpoint and --sft_checkpoint are empty; using a fresh LoRA.", flush=True)
         target_modules = default_lora_target_modules(model_type)
         print(f"LoRA target modules: {target_modules}", flush=True)
         lora_config = LoraConfig(
@@ -401,9 +408,8 @@ def train(args):
     # on the same PEFT execution path avoids that mismatch.
     print(f"Loading reference model...", flush=True)
     ref_base, _, _ = load_base_model(args.base_model, model_type)
-    ckpt_for_ref = args.grpo_checkpoint or args.sft_checkpoint
-    if ckpt_for_ref and os.path.exists(ckpt_for_ref):
-        ref_model = PeftModel.from_pretrained(ref_base, ckpt_for_ref)
+    if start_checkpoint:
+        ref_model = PeftModel.from_pretrained(ref_base, start_checkpoint)
     else:
         ref_model = ref_base
     ref_model = ref_model.to(ref_device)
@@ -744,7 +750,7 @@ def main():
     parser.add_argument("--grpo_checkpoint", type=str,
                         default="projects/mmrole/checkpoints/stage2_grpo/best")
     parser.add_argument("--sft_checkpoint", type=str, default="",
-                        help="Fallback: SFT checkpoint if GRPO not available")
+                        help="SFT adapter to start from when --grpo_checkpoint is ''")
     parser.add_argument("--lora_rank", type=int, default=32)
     parser.add_argument("--lora_alpha", type=int, default=64)
     # Data

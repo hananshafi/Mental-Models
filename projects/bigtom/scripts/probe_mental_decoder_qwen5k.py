@@ -2,7 +2,7 @@
 Quick generation test for the bigtom stage1 mental decoder (autoregressive).
 
 Loads Qwen2.5-7B-Instruct + LoRA + heads from
-projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt
+projects/bigtom/checkpoints/stage1_qwen/best_ckpt
 and decodes mental1 / mental2 for a handful of BigToM scenarios via greedy.
 
 Usage:
@@ -28,7 +28,7 @@ from stage1_train_mental_reward import (  # noqa: E402
     build_encoder_context,
 )
 
-DEFAULT_CKPT = REPO / "checkpoints/stage1_qwen_5k/best_ckpt"
+DEFAULT_CKPT = REPO / "checkpoints/stage1_qwen/best_ckpt"
 DATA = REPO / "data/bigtom_qwen_5k_annotated.jsonl"
 
 

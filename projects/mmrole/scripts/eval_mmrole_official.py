@@ -1079,7 +1079,7 @@ def main():
                          help="VLM type: qwen-vl, llava-next, yi-vl (auto-detected if model_name is in MODEL_REGISTRY)")
     p_infer.add_argument("--max_new_tokens", type=int, default=512)
     p_infer.add_argument("--temperature", type=float, default=0.7)
-    p_infer.add_argument("--gpu", type=str, default="0")
+    p_infer.add_argument("--gpu", type=str, default="")
 
     # ── score ──
     p_score = subparsers.add_parser("score", help="Stage 2: Score answers with RM or GPT-4o")
@@ -1096,7 +1096,7 @@ def main():
                          help="RM weights are LoRA adapters (use AutoPeftModelForCausalLM)")
     p_score.add_argument("--no_random", action="store_true", default=False,
                          help="Disable sampling for deterministic RM output")
-    p_score.add_argument("--gpu", type=str, default="0")
+    p_score.add_argument("--gpu", type=str, default="")
 
     # ── results ──
     p_results = subparsers.add_parser("results", help="Stage 3: Aggregate and display results")
@@ -1109,7 +1109,8 @@ def main():
     args = parser.parse_args()
 
     if args.command == "infer":
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+        if args.gpu:
+            os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
         print(f"=== Stage 1: Inference ({args.model_name}) ===")
 
         data_by_split = load_test_data(args.test_dir)
@@ -1203,7 +1204,8 @@ def main():
             )
 
     elif args.command == "score":
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+        if args.gpu:
+            os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
         if args.use_gpt4_judge:
             print(f"=== Stage 2: Scoring with {args.judge_model} ===")

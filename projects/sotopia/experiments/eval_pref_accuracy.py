@@ -110,10 +110,11 @@ def main():
     p.add_argument("--z_dim", type=int, default=128)
     p.add_argument("--val_ratio", type=float, default=0.1)
     p.add_argument("--seed", type=int, default=42)
-    p.add_argument("--gpu", default="0")
+    p.add_argument("--gpu", default="")
     args = p.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     out_path = Path(args.output_path)

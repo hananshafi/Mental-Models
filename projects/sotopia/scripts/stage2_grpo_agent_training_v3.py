@@ -37,6 +37,7 @@ import gc
 import math
 import time
 import argparse
+import copy
 import random
 import re
 from typing import List, Optional
@@ -261,6 +262,13 @@ class RecursiveToMRewardModel(nn.Module):
         return joint_reward, z1_reward, z_combined_reward
 
 
+def require_checkpoint_files(checkpoint_dir, names):
+    """Fail fast instead of scoring with a partially loaded reward model."""
+    missing = [name for name in names if not os.path.exists(os.path.join(checkpoint_dir, name))]
+    if missing:
+        raise FileNotFoundError(f"Reward checkpoint {checkpoint_dir} is missing {missing}.")
+
+
 # ------------------------------------------------------------------------------
 # Frozen Reward Model Wrapper (v3)
 # ------------------------------------------------------------------------------
@@ -279,6 +287,12 @@ class FrozenRewardModel:
         self.device = device
         self.scoring_dim_indices = scoring_dim_indices
         self.ensemble_weight = ensemble_weight
+        require_checkpoint_files(checkpoint_dir, ["lora_adapter"] + [
+            f"{name}.pth" for name in (
+                "z1_mu", "z2_mu", "joint_outcome_head", "z1_only_reward_head",
+                "z_combined_reward_head",
+            )
+        ])
 
         print(f"  [Reward] Loading tokenizer...", flush=True)
         self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
@@ -505,6 +519,9 @@ class FrozenRewardModelV2:
         self.device = device
         self.scoring_dim_indices = scoring_dim_indices
         self.ensemble_weight = ensemble_weight
+        require_checkpoint_files(checkpoint_dir, ["lora_adapter"] + [
+            f"{name}.pth" for name in ("context_mu", "joint_outcome_head", "z_only_reward_head")
+        ])
 
         self.tokenizer = AutoTokenizer.from_pretrained(base_model_name)
         if self.tokenizer.pad_token is None:
@@ -1177,8 +1194,17 @@ RESUME_INVARIANT_ARGS = (
 )
 
 
-def apply_preset(args, preset_name):
-    """Apply preset values for any arg that wasn't explicitly set on CLI."""
+def explicit_cli_args(parser, argv=None):
+    """Destinations of arguments given explicitly on the command line."""
+    probe = copy.deepcopy(parser)
+    for action in probe._actions:
+        action.default = argparse.SUPPRESS
+    return set(vars(probe.parse_args(argv)))
+
+
+def apply_preset(args, preset_name, explicit=()):
+    """Apply a preset. Preset values take precedence over the same CLI arguments
+    (the behavior the paper's runs used); overridden flags are reported."""
     if preset_name not in PRESETS:
         print(f"WARNING: Unknown preset '{preset_name}', skipping.", flush=True)
         return
@@ -1186,8 +1212,9 @@ def apply_preset(args, preset_name):
     print(f">> Applying preset '{preset_name}':", flush=True)
     for key, val in preset.items():
         if hasattr(args, key):
-            # Only apply if arg is at its parser default
-            # (crude heuristic: check if it matches the parser default)
+            if key in explicit and getattr(args, key) != val:
+                print(f"   WARNING: --{key}={getattr(args, key)} is overridden by the preset",
+                      flush=True)
             setattr(args, key, val)
             print(f"   {key} = {val}", flush=True)
 
@@ -1209,7 +1236,8 @@ def main():
     parser.add_argument("--output_dir", type=str, required=True)
 
     parser.add_argument("--preset", type=str, default=None, choices=["qwen", "llama", "mistral"],
-                        help="Apply model-specific hyperparameter preset. CLI args override preset values.")
+                        help="Apply a model-specific hyperparameter preset. Preset values take "
+                             "precedence over the same CLI arguments.")
 
     parser.add_argument("--group_size", type=int, default=8)
     parser.add_argument("--grpo_epochs", type=int, default=2)
@@ -1254,20 +1282,20 @@ def main():
                         help="Refresh <output_dir>/last every N optimizer steps "
                              "(SFT warm-up and GRPO).")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="0")
+    parser.add_argument("--gpu", type=str, default="")
     parser.add_argument("--save_every", type=int, default=50)
     parser.add_argument("--reward_scoring_dims", type=str, default=None,
                         help="Comma-separated subset of dims. E.g. 'goal,relationship,knowledge'")
     args = parser.parse_args()
 
-    # Apply preset BEFORE processing (CLI args override later if re-parsed)
     if args.preset:
-        apply_preset(args, args.preset)
+        apply_preset(args, args.preset, explicit_cli_args(parser))
 
     if args.no_sft_warmup:
         args.sft_warmup = False
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 

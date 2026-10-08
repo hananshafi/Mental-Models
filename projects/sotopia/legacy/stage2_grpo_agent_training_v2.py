@@ -825,14 +825,15 @@ def main():
                         help="Weight for episode-level trajectory reward bonus on last turn (0=off, recommended 0.3-0.5)")
     parser.add_argument("--resume_from_step", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="0")
+    parser.add_argument("--gpu", type=str, default="")
     parser.add_argument("--save_every", type=int, default=50)
     parser.add_argument("--reward_scoring_dims", type=str, default=None,
                         help="Comma-separated subset of dims to use for GRPO reward scoring. "
                              "E.g. 'goal,relationship,knowledge'. Defaults to all dims.")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 

@@ -8,8 +8,8 @@ policies. The released repository is pinned at `third_party/src/tomi`.
 python projects/bigtom/scripts/evaluate_official_benchmarks.py \
   --datasets tomi \
   --mode grpo \
-  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen_5k/best_ckpt \
-  --policy_ckpt projects/bigtom/checkpoints/stage3_qwen_5k/step_300 \
+  --stage1_ckpt projects/bigtom/checkpoints/stage1_qwen/best_ckpt \
+  --policy_ckpt projects/bigtom/checkpoints/stage3_qwen/step_300 \
   --out_dir projects/tomi/runs/bigtom_grpo
 ```
 

@@ -251,7 +251,7 @@ checkpoint layouts and transfer-evaluation paths.
 
 ```bash
 python tools/validate_repository.py
-python -m compileall -q projects tools
+python -m compileall -q projects tools third_party/overlays
 find projects tools -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 pytest -q projects/bigtom/tests projects/fantom/tests
 ```

@@ -1314,10 +1314,11 @@ def main():
     parser.add_argument("--max_grad_norm", type=float, default=5.0,
                         help="Max gradient norm for clipping")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="7")
+    parser.add_argument("--gpu", type=str, default="")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 

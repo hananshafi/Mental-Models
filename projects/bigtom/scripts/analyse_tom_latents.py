@@ -15,7 +15,7 @@ Pipeline:
 
 Usage:
   python scripts/analyse_tom_latents.py \
-      --ckpt projects/bigtom/checkpoints/stage1_qwen_5k/step_1000 \
+      --ckpt projects/bigtom/checkpoints/stage1_qwen/step_1000 \
       --output_dir projects/bigtom/runs/analysis/mental_latent_qwen_step1000 \
       --max_records 1500
 """

@@ -1174,7 +1174,7 @@ def main():
     parser.add_argument("--data_path", type=str,
                         default="projects/sotopia/data/sotopia_turn_rewards_v3.jsonl")
     parser.add_argument("--output_dir", type=str,
-                        default="projects/sotopia/checkpoints/coupled_mental_reward_v3")
+                        default="projects/sotopia/checkpoints/coupled_mental_reward_qwen_v3")
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--grad_accum_steps", type=int, default=8)
     parser.add_argument("--num_epochs", type=int, default=10)
@@ -1210,14 +1210,15 @@ def main():
                         help="Hold out this fraction of data for validation-based checkpoint selection")
     parser.add_argument("--num_workers", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--gpu", type=str, default="7")
+    parser.add_argument("--gpu", type=str, default="")
     parser.add_argument("--resume", action="store_true",
                         help="Continue from <output_dir>/last after an interruption.")
     parser.add_argument("--resume_every", type=int, default=100,
                         help="Refresh <output_dir>/last every N optimizer steps (and every epoch).")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 
