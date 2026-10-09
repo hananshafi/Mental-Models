@@ -1,7 +1,10 @@
 <h1 align="center">Mental Models for Multi-Agent Systems</h1>
-<p align="center">
-  <img src="assets/tag-neurips-2026.svg" height="54" alt="NeurIPS 2026">
-</p>
+<h3 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/neurips-2026-dark.svg">
+    <img src="assets/neurips-2026.svg" height="40" alt="NeurIPS 2026">
+  </picture>
+</h3>
 
 <p align="center">
   <strong><a href="https://hananshafi.github.io/">Hanan Gani</a></strong> &nbsp;&middot;&nbsp;
