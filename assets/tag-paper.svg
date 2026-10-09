@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="46" viewBox="0 0 128 46" role="img" aria-label="Paper">
-  <rect x="1" y="1" width="126" height="44" rx="14" fill="#E5EBF2" stroke="#5E7895" stroke-width="2"/>
-  <circle cx="25" cy="23" r="13" fill="#5E7895"/>
-  <path d="M20 15.5h8l4 4V31H20z" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linejoin="round"/>
-  <path d="M28 15.5V20h4M23 24h6M23 27.5h6" fill="none" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="47" y="29" fill="#27384B" font-family="Arial, sans-serif" font-size="16" font-weight="700">Paper</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="111" height="44" viewBox="0 0 111 44" role="img" aria-label="Paper">
+  <title>Paper</title>
+  <rect width="111" height="44" rx="22.0" fill="#2f4e7c"/>
+  <rect x="1.5" y="1.5" width="108" height="41" rx="20.5" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+  <g transform="translate(14 12)"><path d="M4 1.5h8l4.5 4.5v12.5H4z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 1.5V6h4.5M7 10h6.5M7 13.5h6.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <text x="44" y="28.4" fill="#ffffff" font-family="-apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" textLength="47.2" lengthAdjust="spacingAndGlyphs">Paper</text>
 </svg>

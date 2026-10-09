@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="184" height="46" viewBox="0 0 184 46" role="img" aria-label="Project Page">
-  <rect x="1" y="1" width="182" height="44" rx="14" fill="#E3EFEB" stroke="#5C8775" stroke-width="2"/>
-  <circle cx="25" cy="23" r="13" fill="#5C8775"/>
-  <circle cx="25" cy="23" r="8" fill="none" stroke="#FFFFFF" stroke-width="1.7"/>
-  <path d="M17 23h16M25 15c3 3 3 13 0 16M25 15c-3 3-3 13 0 16" fill="none" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round"/>
-  <text x="47" y="29" fill="#243B32" font-family="Arial, sans-serif" font-size="16" font-weight="700">Project Page</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="167" height="44" viewBox="0 0 167 44" role="img" aria-label="Project Page">
+  <title>Project Page</title>
+  <rect width="167" height="44" rx="22.0" fill="#2e6b5a"/>
+  <rect x="1.5" y="1.5" width="164" height="41" rx="20.5" fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1"/>
+  <g transform="translate(14 12)"><circle cx="10" cy="10" r="8.2" fill="none" stroke="#fff" stroke-width="1.8"/><path d="M1.8 10h16.4M10 1.8c3 2.6 3 13.8 0 16.4M10 1.8c-3 2.6-3 13.8 0 16.4" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></g>
+  <text x="44" y="28.4" fill="#ffffff" font-family="-apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="17" font-weight="700" textLength="103.0" lengthAdjust="spacingAndGlyphs">Project Page</text>
 </svg>

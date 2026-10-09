@@ -1,5 +1,7 @@
 <h1 align="center">Mental Models for Multi-Agent Systems</h1>
-<h3 align="center"><b>NeurIPS 2026</b></h3>
+<p align="center">
+  <img src="assets/tag-neurips-2026.svg" height="54" alt="NeurIPS 2026">
+</p>
 
 <p align="center">
   <strong><a href="https://hananshafi.github.io/">Hanan Gani</a></strong> &nbsp;&middot;&nbsp;
@@ -10,11 +12,11 @@
 </p>
 
 <p align="center">
-  <a href="https://hananshafi.github.io/Mental-Models/"><img src="assets/tag-project-page.svg" height="42" alt="Project Page"></a>
+  <a href="https://hananshafi.github.io/Mental-Models/"><img src="assets/tag-project-page.svg" height="44" alt="Project Page"></a>
   &nbsp;
-  <a href="https://arxiv.org/pdf/2610.12453"><img src="assets/tag-paper.svg" height="42" alt="Paper"></a>
+  <a href="https://arxiv.org/pdf/2610.12453"><img src="assets/tag-paper.svg" height="44" alt="Paper"></a>
   &nbsp;
-  <a href="https://arxiv.org/abs/2610.12453"><img src="assets/tag-arxiv.svg" height="42" alt="arXiv"></a>
+  <a href="https://arxiv.org/abs/2610.12453"><img src="assets/tag-arxiv.svg" height="44" alt="arXiv"></a>
 </p>
 
 <p align="center">
