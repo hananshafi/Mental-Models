@@ -12,9 +12,9 @@
 <p align="center">
   <a href="https://hananshafi.github.io/Mental-Models/"><img src="assets/tag-project-page.svg" height="42" alt="Project Page"></a>
   &nbsp;
-  <a href="https://example.com/mental-models-paper.pdf"><img src="assets/tag-paper.svg" height="42" alt="Paper"></a>
+  <a href="https://arxiv.org/pdf/2610.12453"><img src="assets/tag-paper.svg" height="42" alt="Paper"></a>
   &nbsp;
-  <a href="https://arxiv.org/abs/0000.00000"><img src="assets/tag-arxiv.svg" height="42" alt="arXiv"></a>
+  <a href="https://arxiv.org/abs/2610.12453"><img src="assets/tag-arxiv.svg" height="42" alt="arXiv"></a>
 </p>
 
 <p align="center">

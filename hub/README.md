@@ -117,8 +117,8 @@ This is the official annotation release accompanying the NeurIPS 2026 paper
 ***Mental Models for Multi-Agent Systems***.
 
 **Paper resources:** [Project page](https://hananshafi.github.io/Mental-Models/)
-| [Code](https://github.com/hananshafi/Mental-Models) | Paper and arXiv links
-will be added upon release.
+| [Code](https://github.com/hananshafi/Mental-Models) | [Paper](https://arxiv.org/pdf/2610.12453)
+| [arXiv](https://arxiv.org/abs/2610.12453)
 
 The paper studies explicit, recursive mental representations for multi-agent
 decision-making. This dataset contains the mental-state, reward, rationale, and
