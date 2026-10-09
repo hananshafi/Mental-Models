@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="812" viewBox="0 0 1200 812" role="img" aria-labelledby="t d">
+<title id="t">Same question, two agents</title>
+<desc id="d">At dinner, with Jordan at the table, Casey asks an assistant whether the package for Saturday is ready. Without a mental model the assistant reveals the surprise party. With a mental model it infers that Jordan does not know, that Casey wants to keep the surprise, and that Casey expects it to keep the secret, so it answers without revealing anything.</desc>
+<style>text{font-family:-apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif} .h1{font-size:31px;font-weight:700;fill:#e6edf3} .ctx{font-size:20px;fill:#9198a1} .say{font-size:24px;font-weight:600;fill:#e6edf3} .name{font-size:17px;font-weight:700} .tag{font-size:18px;fill:#9198a1} .h2{font-size:25px;font-weight:700;fill:#e6edf3} .sub{font-size:18px;fill:#9198a1} .label{font-size:15px;font-weight:700;letter-spacing:0.08em} .row{font-size:20px;fill:#e6edf3} .row-empty{font-size:20px;font-style:italic;fill:#6e7681} .quote{font-size:21px;fill:#e6edf3} .outcome{font-size:19px;font-weight:700} .foot{font-size:18px;fill:#9198a1}</style>
+<rect width="1200" height="812" fill="#0d1117"/>
+<text x="40" y="58" class="h1">Same question, two agents</text>
+<text x="40" y="96" class="ctx">Casey is planning a surprise party for Jordan. At dinner, with Jordan at the table,</text>
+<text x="40" y="122" class="ctx">Casey asks the household assistant:</text>
+<circle cx="76" cy="182" r="30" fill="#a597e6"/><circle cx="76" cy="174.5" r="9.0" fill="#0d1117"/><path d="M59.5 200.0 C62.5 185.0 89.5 185.0 92.5 200.0" fill="#0d1117"/>
+<text x="76" y="232" text-anchor="middle" class="name" fill="#a597e6">Casey</text>
+<rect x="124" y="150" width="470" height="64" rx="12" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+<path d="M125 172 L112 182 L125 190" fill="#161b22" stroke="#30363d" stroke-width="1.5" stroke-linejoin="round"/>
+<rect x="125" y="173" width="3" height="16" fill="#161b22"/>
+<text x="148" y="191" class="say">“Is the package ready for Saturday?”</text>
+<circle cx="684" cy="182" r="30" fill="#e0b05c"/><circle cx="684" cy="174.5" r="9.0" fill="#0d1117"/><path d="M667.5 200.0 C670.5 185.0 697.5 185.0 700.5 200.0" fill="#0d1117"/>
+<text x="684" y="232" text-anchor="middle" class="name" fill="#e0b05c">Jordan</text>
+<text x="732" y="177" class="tag">at the table, and doesn’t know</text>
+<text x="732" y="201" class="tag">about the party</text>
+<rect x="40" y="244" width="540" height="508" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+<circle cx="76" cy="282" r="8" fill="#f2877b"/>
+<text x="94" y="291" class="h2">Without a mental model</text>
+<text x="68" y="322" class="sub">Responds to the literal words</text>
+<rect x="68" y="342" width="484" height="64" rx="8" fill="#0d1117" stroke="#3d444d" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="86" y="367" class="label" fill="#6e7681">BELIEF</text>
+<text x="86" y="393" class="row-empty">not modeled</text>
+<rect x="68" y="416" width="484" height="64" rx="8" fill="#0d1117" stroke="#3d444d" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="86" y="441" class="label" fill="#6e7681">INTENT</text>
+<text x="86" y="467" class="row-empty">not modeled</text>
+<rect x="68" y="490" width="484" height="64" rx="8" fill="#0d1117" stroke="#3d444d" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="86" y="515" class="label" fill="#6e7681">SECOND-ORDER BELIEF</text>
+<text x="86" y="541" class="row-empty">not modeled</text>
+<g transform="translate(68 602)"><circle cx="22" cy="22" r="22" fill="#9fb3d1"/><path d="M22 6 V11 M18.5 6 H25.5" stroke="#161b22" stroke-width="2.2" stroke-linecap="round"/><rect x="10" y="13" width="24" height="19" rx="6" fill="#161b22"/><circle cx="17" cy="22" r="2.6" fill="#9fb3d1"/><circle cx="27" cy="22" r="2.6" fill="#9fb3d1"/><path d="M16.5 28 H27.5" stroke="#9fb3d1" stroke-width="1.8" stroke-linecap="round"/></g>
+<rect x="126" y="580" width="426" height="88" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<path d="M127 616 L116 626 L127 634" fill="#0d1117" stroke="#30363d" stroke-width="1.5" stroke-linejoin="round"/>
+<rect x="128" y="617" width="3" height="16" fill="#0d1117"/>
+<text x="148" y="617" class="quote">“Yes! The birthday cake and the</text>
+<text x="148" y="645" class="quote">decorations are all ready.”</text>
+<rect x="68" y="684" width="484" height="46" rx="23" fill="#3b1f1d"/>
+<path d="M92 701 l14 14 M106 701 l-14 14" fill="none" stroke="#f2877b" stroke-width="3.4" stroke-linecap="round"/>
+<text x="124" y="714" class="outcome" fill="#f2877b">Surprise spoiled</text>
+<rect x="620" y="244" width="540" height="508" rx="14" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+<circle cx="656" cy="282" r="8" fill="#6fcf97"/>
+<text x="674" y="291" class="h2">With a mental model</text>
+<text x="648" y="322" class="sub">Infers what each person knows and wants</text>
+<rect x="648" y="342" width="484" height="64" rx="8" fill="#272241"/>
+<text x="666" y="367" class="label" fill="#c3b8f5">BELIEF</text>
+<text x="666" y="393" class="row">Jordan doesn’t know about the party.</text>
+<rect x="648" y="416" width="484" height="64" rx="8" fill="#33291a"/>
+<text x="666" y="441" class="label" fill="#ecc88a">INTENT</text>
+<text x="666" y="467" class="row">Casey wants to keep it a surprise.</text>
+<rect x="648" y="490" width="484" height="64" rx="8" fill="#1b2c3a"/>
+<text x="666" y="515" class="label" fill="#9cc9e6">SECOND-ORDER BELIEF</text>
+<text x="666" y="541" class="row">Casey expects me to keep the secret.</text>
+<g transform="translate(648 602)"><circle cx="22" cy="22" r="22" fill="#9fb3d1"/><path d="M22 6 V11 M18.5 6 H25.5" stroke="#161b22" stroke-width="2.2" stroke-linecap="round"/><rect x="10" y="13" width="24" height="19" rx="6" fill="#161b22"/><circle cx="17" cy="22" r="2.6" fill="#9fb3d1"/><circle cx="27" cy="22" r="2.6" fill="#9fb3d1"/><path d="M16.5 28 H27.5" stroke="#9fb3d1" stroke-width="1.8" stroke-linecap="round"/></g>
+<rect x="706" y="580" width="426" height="88" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+<path d="M707 616 L696 626 L707 634" fill="#0d1117" stroke="#30363d" stroke-width="1.5" stroke-linejoin="round"/>
+<rect x="708" y="617" width="3" height="16" fill="#0d1117"/>
+<text x="728" y="631" class="quote">“Yes, it’s all set for Saturday.”</text>
+<rect x="648" y="684" width="484" height="46" rx="23" fill="#16301f"/>
+<path d="M670 708 l7 7 l13 -15" fill="none" stroke="#6fcf97" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="704" y="714" class="outcome" fill="#6fcf97">Question answered, surprise kept</text>
+<text x="40" y="790" class="foot">Same conversation, same base model. Only the training signal differs.</text>
+</svg>

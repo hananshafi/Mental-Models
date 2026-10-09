@@ -33,7 +33,10 @@ and multimodal policies. The trained policy acts independently at deployment:
 it does not require a teacher model, reward model, or additional inference pass.
 
 <p align="center">
-  <img src="assets/mental-model-concept.svg" width="100%" alt="Comparison of an agent without mental-model training and an agent trained with belief, intent, and recursive mental-state signals.">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/mental-model-concept-dark.svg">
+    <img src="assets/mental-model-concept.svg" width="100%" alt="Casey asks an assistant whether the package for Saturday is ready while Jordan, who does not know about the surprise party, is at the table. Without a mental model the assistant reveals the surprise; with a mental model it infers who knows what and answers without revealing it.">
+  </picture>
 </p>
 
 ## Mental models for interaction
