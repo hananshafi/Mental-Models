@@ -1,10 +1,4 @@
 <h1 align="center">Mental Models for Multi-Agent Systems</h1>
-<h3 align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/neurips-2026-dark.svg">
-    <img src="assets/neurips-2026.svg" height="50" alt="NeurIPS 2026">
-  </picture>
-</h3>
 
 <p align="center">
   <strong><a href="https://hananshafi.github.io/">Hanan Gani</a></strong> &nbsp;&middot;&nbsp;
@@ -12,6 +6,13 @@
   <strong><a href="https://cseweb.ucsd.edu/~mkchandraker/">Manmohan Chandraker</a></strong>
   <br>
   University of California, San Diego
+</p>
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/neurips-2026-dark.svg">
+    <img src="assets/neurips-2026.svg" height="50" alt="NeurIPS 2026">
+  </picture>
 </p>
 
 <p align="center">
