@@ -2,7 +2,7 @@
 <h3 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/neurips-2026-dark.svg">
-    <img src="assets/neurips-2026.svg" height="40" alt="NeurIPS 2026">
+    <img src="assets/neurips-2026.svg" height="50" alt="NeurIPS 2026">
   </picture>
 </h3>
 
